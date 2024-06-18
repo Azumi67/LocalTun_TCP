@@ -81,6 +81,7 @@
 ```
 ./tun-client_amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400
 ```
+ <div align="right">
 **نحوه ساختن سرویس**
  <div align="left">
    
@@ -126,6 +127,7 @@ systemctl start azumilocal.service
 ```
 ./tun-client_amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400
 ```
+ <div align="right">
 **نحوه ساختن سرویس**
  <div align="left">
    
@@ -171,6 +173,7 @@ systemctl start azumilocal.service
 ```
 ./tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400
 ```
+ <div align="right">
 **نحوه ساختن سرویس**
  <div align="left">
    
@@ -216,6 +219,7 @@ systemctl start azumilocal.service
 ```
 ./tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400
 ```
+ <div align="right">
 **نحوه ساختن سرویس**
  <div align="left">
    
@@ -261,6 +265,7 @@ systemctl start azumilocal.service
 ```
 ./tun-client_amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400
 ```
+ <div align="right">
 **نحوه ساختن سرویس**
  <div align="left">
    
@@ -306,6 +311,7 @@ systemctl start azumilocal.service
 ```
 ./tun-client_amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400
 ```
+ <div align="right">
 **نحوه ساختن سرویس**
  <div align="left">
    
@@ -351,6 +357,7 @@ systemctl start azumilocal.service
 ```
 ./tun-client_amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400
 ```
+ <div align="right">
 **نحوه ساختن سرویس**
  <div align="left">
    
@@ -396,6 +403,7 @@ systemctl start azumilocal.service
 ```
 ./tun-client_amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400
 ```
+ <div align="right">
 **نحوه ساختن سرویس**
  <div align="left">
    
