@@ -1,5 +1,5 @@
 # LocalTun_TCP
-This implements a TCP tun between a client &amp; server using a TUN interface. The client and server communicate by encapsulating network packets within TCP connections. Encapsulation &amp; decapsulates is Simultaneous.You can make a establish the tunnel in DIRECT or REVERSE mode and then use the local private ips to be used in port forwarded or another tunnels.
+This implements a TCP tun between a client &amp; server using a TUN interface. The client and server communicate by encapsulating network packets within TCP connections. Encapsulation &amp; decapsulation is Simultaneous.You can make a establish the tunnel in DIRECT or REVERSE mode and then use the local private ips to be used in port forwarded or another tunnels.
 
 - مشکل پکت سایز برطرف شد
 - قابلیت گرفتن پرایوت ایپی به صورت دایرکت و ریورس بر روی اینترفیس tun
