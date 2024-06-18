@@ -25,7 +25,7 @@ This implements a TCP tun between a client &amp; server using a TUN interface. T
   chmod +x tun-server-amd64   << for amd64
   chmod +x tun-client-amd64   << for amd64
  ```
-**Server : KHAREJ  , Client: IRAN [PUBLIC IPV4]**
+**Server : KHAREJ  , Client: IRAN - [PUBLIC IPV4] - DIRECT**
 
 SERVER & Client IPV4 [ Private IPV4]:
  - Server[kharej] command : ./tun-server-amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480
@@ -34,18 +34,7 @@ SERVER & Client IPV4 [ Private IPV6]:
  - Server command : ./tun-server-amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480
  - Client command : ./tun-client-amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400
 --------------
-**Server : IRAN  , Client: KHAREJ**
-
-SERVER & Client IPV4 [ Private IPV4]:
- - Server[iran] command : ./tun-server-amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480
- - Client[kharej] command : ./tun-client-amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400
-SERVER & Client IPV4 [ Private IPV6]:
- - Server command : ./tun-server-amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480
- - Client command : ./tun-client-amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400
-   
---------------------------
-**Server : KHAREJ  , Client: IRAN [PUBLIC IPV6]**
-
+**Server : KHAREJ  , Client: IRAN [PUBLIC IPV6] - DIRECT**
 SERVER & Client IPV6 [ Private IPV4]:
  - Server[kharej] command : ./tun-server-amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480
  - Client[iran] command : ./tun-client-amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400
@@ -54,7 +43,17 @@ SERVER & Client IPV6 [ Private IPV6]:
  - Client command : ./tun-client-amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400
 
 -----------------
-**Server : IRAN  , Client: KHAREJ**
+**Server : IRAN  , Client: KHAREJ - [PUBLIC IPV4] - REVERSE**
+
+SERVER & Client IPV4 [ Private IPV4]:
+ - Server[iran] command : ./tun-server-amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480
+ - Client[kharej] command : ./tun-client-amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400
+SERVER & Client IPV4 [ Private IPV6]:
+ - Server command : ./tun-server-amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480
+ - Client command : ./tun-client-amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400
+
+------------
+**Server : IRAN  , Client: KHAREJ - [PUBLIC IPV6] - REVERSE**
 
 SERVER & Client IPV6 [ Private IPV4]:
  - Server[iran] command : ./tun-server-amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480
@@ -62,3 +61,4 @@ SERVER & Client IPV6 [ Private IPV4]:
 SERVER & Client IPV6 [ Private IPV6]:
  - Server command : ./tun-server-amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480
  - Client command : ./tun-client-amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400
+
