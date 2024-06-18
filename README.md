@@ -2,6 +2,7 @@
 This implements a TCP tun between a client &amp; server using a TUN interface. The client and server communicate by encapsulating network packets within TCP connections. Encapsulation &amp; decapsulates is Simultaneous.You can make a establish the tunnel in DIRECT or REVERSE mode and then use the local private ips to be used in port forwarded or another tunnels.
 
 - مشکل پکت سایز برطرف شد
+- قابلیت گرفتن پرایوت ایپی به صورت دایرکت و ریورس بر روی اینترفیس tun
 - از طریق tcp دو سرور به هم وصل میشوند و از طریق اینترفیس tun و پرایوت ایپی به هم دیگه متصل خواهند بود. encapsulation & decapsulation هم زمان انجام میشود.
 - هدف نوشتن این برنامه برای این بوده است که از طریق پورت tcp و tun interface،‌ دو سرور به هم متصل شوند و از پرایوت آی‌پی های آنها برای تانل استقاده کرد .
 - میتوان سرور اصلی ایران باشد و کلاینت خارج باشد و بدین صورت میتوان تانل لوکالی بر روی سرور های خارج محدود هم ایجاد کرد.
