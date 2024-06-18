@@ -23,7 +23,7 @@ This implements a TCP tun between a client &amp; server using a TUN interface. T
   chmod +x tun-server-amd64   << for amd64
   chmod +x tun-client-amd64   << for amd64
  ```
-**Server : KHAREJ  , Client: IRAN[PUBLIC IPV4]**
+**Server : KHAREJ  , Client: IRAN [PUBLIC IPV4]**
  - SERVER & Client IPV4 [ Private IPV4]:
  - Server[kharej] command : ./tun-server-amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480
  - Client[iran] command : ./tun-client-amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400
