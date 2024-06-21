@@ -43,6 +43,7 @@
 **روش اجرا**
 -
 
+- حتما در صورت استفاده از فایراول پورت و پرایوت ایپی ها را در فایروال اضافه نمایید.
  <div align="right">
   <details>
     <summary><strong><img src="https://github.com/Azumi67/Rathole_reverseTunnel/assets/119934376/fcbbdc62-2de5-48aa-bbdd-e323e96a62b5" alt="Image">نصب </strong></summary>
