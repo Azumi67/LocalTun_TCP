@@ -12,6 +12,7 @@
 - امکان انتخاب subnet mask برای پرایوت ایپی های ساخته
 - امکان وارد کردن mtu به صورت manual
 - دارای authentication key برای ارتباط بین سرور و کلاینت
+- دارای verbose برای نمایش لاگ (خطا)
 - مناسب برای ترکیب با IPSEC > لینک : https://github.com/Azumi67/6TO4-GRE-IPIP-SIT
 - اتصال بین چندین سرور ایران و خارج ( بعدا در اسکریپت)
 - بعدا اسکریپت ساخته میشود ( در اسکریپت با IPsec هم میتوان ترکیب کرد)
@@ -52,10 +53,8 @@
   apt update -y
   apt install wget -y
   apt install unzip -y
-  wget https://github.com/Azumi67/LocalTun_TCP/releases/download/v1.1/tun-server.zip
-  wget https://github.com/Azumi67/LocalTun_TCP/releases/download/v1.1/tun-client.zip
-  unzip tun-server.zip -d /root/localTUN
-  unzip tun-client.zip -d /root/localTUN
+  wget https://github.com/Azumi67/LocalTun_TCP/releases/download/v1.2/amd64.zip
+  unzip amd64.zip -d /root/localTUN
   cd localTUN
   chmod +x tun-server_amd64   << for amd64
   chmod +x tun-client_amd64   << for amd64
