@@ -7,68 +7,37 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/songgao/water"
 )
 
-type kharejConfig struct {
-	ServerPort int
-	TunIP      string
-	IranIP     string
-	SubnetMask string
-	TunName    string
-	SecretKey  string
-	MTU        int
-}
-
-func serverSide(config kharejConfig) {
-	tun, err := tuncreate(config.TunName)
+func Run(serverPort int, tunIP, iranIP, subnetMask string, tunName string, mtu int, secretKey string, verbose bool) {
+	config := water.Config{
+		DeviceType: water.TUN,
+	}
+	config.Name = tunName
+	tun, err := water.New(config)
 	if err != nil {
 		log.Fatalf("Couldn't create TUN device: %v", err)
 	}
 	defer tun.Close()
 
-	tunup(tun, config.TunIP, config.SubnetMask, config.MTU)
+	tunUp(tun, tunIP, iranIP, subnetMask, mtu, tunName)
 
-	if iPv6(config.IranIP) {
-		if err := route(tun.Name(), config.IranIP, "128"); err != nil {
-			log.Fatalf("Adding route for private IPv6 failed: %v", err)
-		}
-	} else {
-		if err := route(tun.Name(), config.IranIP, "32"); err != nil {
-			log.Fatalf("Adding route for private IPv4 failed: %v", err)
+	for {
+		err = serverSide(tun, serverPort, secretKey, verbose)
+		if err != nil {
+			log.Printf("Server loop error: %v. Retrying in 3 seconds...\n", err)
+			time.Sleep(3 * time.Second)
 		}
 	}
-
-	enableForward()
-
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", config.ServerPort))
-	if err != nil {
-		log.Fatalf("Failed to listen on port %d: %v", config.ServerPort, err)
-	}
-	defer listener.Close()
-
-	log.Printf("Server is listening on port %d\n", config.ServerPort)
-
-	iranFunctions(listener, tun, config.SecretKey)
 }
 
-func tuncreate(name string) (*water.Interface, error) {
-	config := water.Config{
-		DeviceType: water.TUN,
-	}
-	config.Name = name
-	return water.New(config)
-}
-
-func tunup(tun *water.Interface, tunIP, subnetMask string, mtu int) {
-	log.Printf("TUN device created: %s\n", tun.Name())
-
+func tunUp(tun *water.Interface, tunIP, iranIP, subnetMask string, mtu int, tunName string) {
 	if err := cmd("ip", "link", "set", "dev", tun.Name(), "up"); err != nil {
 		log.Fatalf("Couldn't bring up the TUN device: %v", err)
 	}
-
-	log.Printf("TUN device is up: %s\n", tun.Name())
 
 	if err := cmd("ip", "link", "set", "dev", tun.Name(), "mtu", fmt.Sprintf("%d", mtu)); err != nil {
 		log.Fatalf("Couldn't set MTU: %v", err)
@@ -78,18 +47,16 @@ func tunup(tun *water.Interface, tunIP, subnetMask string, mtu int) {
 		log.Fatalf("Couldn't assign private IP address to TUN device: %v", err)
 	}
 
-	log.Printf("Private IP address %s/%s assigned to TUN device: %s\n", tunIP, subnetMask, tun.Name())
-}
-
-func route(devName, ip, mask string) error {
-	if iPv6(ip) {
-		return cmd("ip", "-6", "route", "add", fmt.Sprintf("%s/%s", ip, mask), "dev", devName)
+	if iPv6(iranIP) {
+		if err := cmd("ip", "-6", "route", "add", fmt.Sprintf("%s/128", iranIP), "dev", tun.Name()); err != nil {
+			log.Fatalf("Adding route for private IPv6 failed: %v", err)
+		}
 	} else {
-		return cmd("ip", "route", "add", fmt.Sprintf("%s/%s", ip, mask), "dev", devName)
+		if err := cmd("ip", "route", "add", fmt.Sprintf("%s/32", iranIP), "dev", tun.Name()); err != nil {
+			log.Fatalf("Adding route for private IPv4 failed: %v", err)
+		}
 	}
-}
 
-func enableForward() {
 	if err := cmd("sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward"); err != nil {
 		log.Fatalf("Enabling IPv4 forwarding failed: %v", err)
 	}
@@ -98,78 +65,135 @@ func enableForward() {
 	}
 }
 
-func iranFunctions(listener net.Listener, tun *water.Interface, secretKey string) {
-	conn, err := listener.Accept()
+func serverSide(tun *water.Interface, serverPort int, secretKey string, verbose bool) error {
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", serverPort))
 	if err != nil {
-		log.Fatalf("Couldn't accept TCP connection: %v", err)
+		return fmt.Errorf("starting server failed: %v", err)
 	}
-	defer conn.Close()
+	defer listener.Close()
 
-	log.Println("Client connected")
-
-	auth := make([]byte, len(secretKey))
-	_, err = conn.Read(auth)
-	if err != nil {
-		log.Fatalf("Reading secret key from client failed: %v", err)
+	if verbose {
+		log.Printf("Server listening on port %d\n", serverPort)
 	}
 
-	if string(auth) != secretKey {
-		log.Fatalf("Invalid secret key from client")
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Printf("Couldn't accept any connection: %v", err)
+			continue
+		}
+		go handle(conn, tun, secretKey, verbose)
 	}
-
-	log.Println("Client authenticated successfully")
-
-	go pckttoiran(tun, conn)
-	pckttotun(tun, conn)
 }
 
-func pckttoiran(tun *water.Interface, conn net.Conn) {
+func handle(conn net.Conn, tun *water.Interface, secretKey string, verbose bool) {
+	defer conn.Close()
+
+	buf := make([]byte, len(secretKey))
+	_, err := conn.Read(buf)
+	if err != nil {
+		if verbose {
+			log.Printf("Reading authentication key failed: %v", err)
+		}
+		return
+	}
+
+	if string(buf) != secretKey {
+		if verbose {
+			log.Printf("Invalid secret key")
+		}
+		return
+	}
+
+	if verbose {
+		log.Println("Client connected")
+	}
+
+	clientToTun := make(chan []byte, 100)
+	tunToClient := make(chan []byte, 100)
+
+	go fromClient(conn, tun, clientToTun, verbose)
+	go toTun(tun, clientToTun, verbose)
+	go fromTun(tun, tunToClient, verbose)
+	go toClient(conn, tunToClient, verbose)
+
+	select {}
+}
+
+func fromClient(conn net.Conn, tun *water.Interface, clientToTun chan []byte, verbose bool) {
+	for {
+		pcktLength := make([]byte, 2)
+		if _, err := conn.Read(pcktLength); err != nil {
+			if verbose {
+				log.Printf("Couldn't read packet length from client: %v", err)
+			}
+			return
+		}
+
+		length := binary.BigEndian.Uint16(pcktLength)
+		buff := make([]byte, length)
+
+		_, err := data(conn, buff)
+		if err != nil {
+			if verbose {
+				log.Printf("Couldn't read data from client: %v", err)
+			}
+			return
+		}
+
+		clientToTun <- buff
+	}
+}
+
+func toTun(tun *water.Interface, clientToTun chan []byte, verbose bool) {
+	for buff := range clientToTun {
+		if _, err := tun.Write(buff); err != nil {
+			if verbose {
+				log.Printf("Couldn't write to TUN device: %v", err)
+			}
+		}
+	}
+}
+
+func fromTun(tun *water.Interface, tunToClient chan []byte, verbose bool) {
 	for {
 		buff := make([]byte, 1500)
 		n, err := tun.Read(buff)
 		if err != nil {
-			log.Fatalf("Couldn't read from TUN device: %v", err)
+			if verbose {
+				log.Printf("Couldn't read from TUN device: %v", err)
+			}
+			continue
 		}
-
-		log.Printf("Reading %d bytes from TUN device\n", n)
 
 		packet := make([]byte, 2+n)
 		binary.BigEndian.PutUint16(packet[:2], uint16(n))
 		copy(packet[2:], buff[:n])
 
-		_, err = conn.Write(packet)
-		if err != nil {
-			log.Fatalf("Couldn't write to client: %v", err)
-		}
-
-		log.Printf("Forwarded %d bytes to client\n", n)
+		tunToClient <- packet
 	}
 }
 
-func pckttotun(tun *water.Interface, conn net.Conn) {
-	for {
-		pcktLength := make([]byte, 2)
-		_, err := conn.Read(pcktLength)
-		if err != nil {
-			log.Fatalf("Reading packet from client failed: %v", err)
+func toClient(conn net.Conn, tunToClient chan []byte, verbose bool) {
+	for packet := range tunToClient {
+		if _, err := conn.Write(packet); err != nil {
+			if verbose {
+				log.Printf("Couldn't write to client: %v", err)
+			}
 		}
-
-		length := binary.BigEndian.Uint16(pcktLength)
-		buff := make([]byte, length)
-		n, err := conn.Read(buff)
-		if err != nil {
-			log.Fatalf("Couldn't read from client: %v", err)
-		}
-
-		log.Printf("Reading %d bytes from client\n", n)
-
-		_, err = tun.Write(buff[:n])
-		if err != nil {
-			log.Fatalf("Couldn't write to TUN device: %v", err)
-		}
-
-		log.Printf("Written %d bytes to TUN device\n", n)
 	}
+}
+
+func data(conn net.Conn, buff []byte) (int, error) {
+	totalRead := 0
+	for totalRead < len(buff) {
+		n, err := conn.Read(buff[totalRead:])
+		if err != nil {
+			return totalRead, err
+		}
+		totalRead += n
+	}
+	return totalRead, nil
 }
 
 func cmd(name string, args ...string) error {
