@@ -2,19 +2,27 @@ package main
 
 import (
 	"flag"
-	"log"
+	"fmt"
+	"github.com/sirupsen/logrus"
+	"net"
+	"os"
+	"sync"
+	"time"
 
 	"github.com/songgao/water"
+	"github.com/Azumi67/LocalTun_TCP/tcp_no_delay_client"
 	"github.com/Azumi67/LocalTun_TCP/smux_client"
 	"github.com/Azumi67/LocalTun_TCP/client"
 )
 
+var log = logrus.New()
+
 func main() {
 	kharejAddr := flag.String("server-addr", "SERVER_IP", "Server IP address")
-	serverPort := flag.Int("server-port", 8000, "Server port")
-	tunIP := flag.String("client-private", "2001:db8::2", "TUN IP address")
-	kharejTunIP := flag.String("server-private", "2001:db8::1", "Server TUN IP address")
-	subnetMask := flag.String("subnet", "64", "Subnet mask (e.g., 24 or 64)")
+	serverPort := flag.Int("server-port", 800, "Server port")
+	tunIP := flag.String("client-private", "2001:db8::2", "Client Private IP address")
+	serverTunIP := flag.String("server-private", "2001:db8::1", "Server Private IP address")
+	subnetMask := flag.String("subnet", "64", "Subnet mask (e.g : 24 or 64)")
 	tunName := flag.String("device", "tun2", "TUN device name")
 	secretKey := flag.String("key", "azumi", "Secret key for authentication")
 	mtu := flag.Int("mtu", 1480, "MTU for TUN device")
@@ -22,6 +30,13 @@ func main() {
 	useSmux := flag.Bool("smux", false, "Enable smux multiplexing")
 
 	flag.Parse()
+
+	if *verbose {
+		log.SetLevel(logrus.DebugLevel)
+		log.SetOutput(os.Stdout)
+	} else {
+		log.SetLevel(logrus.InfoLevel)
+	}
 
 	config := water.Config{
 		DeviceType: water.TUN,
@@ -33,49 +48,172 @@ func main() {
 	}
 	defer tun.Close()
 
-	TunUp(tun, *tunIP, *kharejTunIP, *subnetMask, *mtu, *tunName)
+	tunclient.TunUp(tun, *tunIP, *serverTunIP, *subnetMask, *mtu, *tunName)
+
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", *kharejAddr, *serverPort))
+	if err != nil {
+		log.Fatalf("Couldn't connect to server: %v", err)
+	}
+	defer conn.Close()
+
+	log.Info("Connected to server")
+
+	tcpConn, ok := conn.(*net.TCPConn)
+	if !ok {
+		log.Warn("Converting to TCPConn failed")
+		return
+	}
+
+	if err := tcpnodelay.SetTCPNoDelay(tcpConn); err != nil {
+		log.Warnf("Setting up TCP no delay failed: %v", err)
+		return
+	}
+
+	stop := make(chan struct{})
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if *useSmux {
+			smuxclient.HandleSmux(conn, tun, *verbose, stop)
+		} else {
+			handleServer(conn, tun, *secretKey, *verbose, stop)
+		}
+	}()
 
 	for {
-		var err error
-		if *useSmux {
-			err = smuxclient.RunSmux(*kharejAddr, *serverPort, tun, *secretKey, *verbose)
-		} else {
-			err = tunclient.Run(tun, *kharejAddr, *serverPort, *secretKey, *verbose)
-		}
-
-		if err != nil {
-			log.Printf("Error in client loop: %v. Retrying in 5 seconds...\n", err)
-			time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second) 
+		if !ping(*serverTunIP) {
+			log.Warn("Server is unreachable, azumi is reconnecting..")
+			close(stop) 
+			conn.Close()
+			wg.Wait() 
+			break
 		}
 	}
 }
-func TunUp(tun *water.Interface, tunIP, kharejTunIP, subnetMask string, mtu int, tunName string) {
-	if err := cmd("ip", "link", "set", "dev", tun.Name(), "up"); err != nil {
-		log.Fatalf("Couldn't bring up the TUN device: %v", err)
+
+func handleServer(conn net.Conn, tun *water.Interface, secretKey string, verbose bool, stop chan struct{}) {
+	if _, err := conn.Write([]byte(secretKey)); err != nil {
+		log.Warnf("Couldn't send authentication key: %v", err)
+		return
 	}
 
-	if err := cmd("ip", "link", "set", "dev", tun.Name(), "mtu", fmt.Sprintf("%d", mtu)); err != nil {
-		log.Fatalf("Couldn't set MTU: %v", err)
-	}
+	clientToTun := make(chan []byte, 100)
+	tunToClient := make(chan []byte, 100)
 
-	if err := cmd("ip", "addr", "add", fmt.Sprintf("%s/%s", tunIP, subnetMask), "dev", tun.Name()); err != nil {
-		log.Fatalf("Couldn't assign private IP address to TUN device: %v", err)
-	}
+	var wg sync.WaitGroup
 
-	if IPv6(kharejTunIP) {
-		if err := cmd("ip", "-6", "route", "add", fmt.Sprintf("%s/128", kharejTunIP), "dev", tun.Name()); err != nil {
-			log.Fatalf("Adding route for private IPv6 failed: %v", err)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		fromServer(conn, tun, clientToTun, verbose, stop)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		toTun(tun, clientToTun, verbose, stop)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		fromTun(tun, tunToClient, verbose, stop)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		toServer(conn, tunToClient, verbose, stop)
+	}()
+
+	wg.Wait()
+}
+
+func fromServer(conn net.Conn, tun *water.Interface, clientToTun chan []byte, verbose bool, stop chan struct{}) {
+	for {
+		select {
+		case <-stop:
+			return
+		default:
+			pcktLength := make([]byte, 2)
+			if _, err := conn.Read(pcktLength); err != nil {
+				log.Warnf("Couldn't read packet length from server: %v", err)
+				close(clientToTun) 
+				return
+			}
+
+			length := binary.BigEndian.Uint16(pcktLength)
+			buff := make([]byte, length)
+
+			_, err := data(conn, buff)
+			if err != nil {
+				log.Warnf("Couldn't read data from server: %v", err)
+				close(clientToTun) 
+				return
+			}
+
+			clientToTun <- buff
 		}
-	} else {
-		if err := cmd("ip", "route", "add", fmt.Sprintf("%s/32", kharejTunIP), "dev", tun.Name()); err != nil {
-			log.Fatalf("Adding route for private IPv4 failed: %v", err)
+	}
+}
+
+func toTun(tun *water.Interface, clientToTun chan []byte, verbose bool, stop chan struct{}) {
+	for {
+		select {
+		case <-stop:
+			return
+		case buff := <-clientToTun:
+			if _, err := tun.Write(buff); err != nil {
+				log.Warnf("Couldn't write to TUN device: %v", err)
+			}
 		}
 	}
+}
 
-	if err := cmd("sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward"); err != nil {
-		log.Fatalf("Enabling IPv4 forwarding failed: %v", err)
+func fromTun(tun *water.Interface, tunToClient chan []byte, verbose bool, stop chan struct{}) {
+	for {
+		select {
+		case <-stop:
+			return
+		default:
+			buff := make([]byte, 1500)
+			n, err := tun.Read(buff)
+			if err != nil {
+				log.Warnf("Couldn't read from TUN device: %v", err)
+				continue
+			}
+
+			packet := make([]byte, 2+n)
+			binary.BigEndian.PutUint16(packet[:2], uint16(n))
+			copy(packet[2:], buff[:n])
+
+			tunToClient <- packet
+		}
 	}
-	if err := cmd("sh", "-c", "echo 1 > /proc/sys/net/ipv6/conf/all/forwarding"); err != nil {
-		log.Fatalf("Enabling IPv6 forwarding failed: %v", err)
+}
+
+func toServer(conn net.Conn, tunToClient chan []byte, verbose bool, stop chan struct{}) {
+	for {
+		select {
+		case <-stop:
+			return
+		case packet := <-tunToClient:
+			if _, err := conn.Write(packet); err != nil {
+				log.Warnf("Couldn't write to server: %v", err)
+				return
+			}
+		}
 	}
+}
+
+func data(conn net.Conn, buff []byte) (int, error) {
+	return conn.Read(buff)
+}
+
+func ping(ip string) bool {
+	// later it will be added or in script i will make a keepalive ping service
+	return true
 }
