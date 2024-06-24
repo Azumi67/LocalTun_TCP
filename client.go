@@ -64,7 +64,7 @@ func main() {
 		return
 	}
 
-	if err := tcpnodelay.SetTCPNoDelay(tcpConn); err != nil {
+	if err := tcpnodelayclient.noDelay(tcpConn); err != nil {
 		log.Warnf("Setting up TCP no delay failed: %v", err)
 		return
 	}
