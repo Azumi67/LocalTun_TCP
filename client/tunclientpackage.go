@@ -1,123 +1,46 @@
 package tunclient
 
 import (
-	"encoding/binary"
 	"fmt"
-	"log"
-	"net"
-	"os"
 	"os/exec"
 
+	"github.com/sirupsen/logrus"
 	"github.com/songgao/water"
 )
 
+var log = logrus.New()
 
-func Run(tun *water.Interface, serverAddr string, serverPort int, secretKey string, verbose bool) error {
-	conn, err := net.Dial("tcp", fmt.Sprintf("[%s]:%d", serverAddr, serverPort))
-	if err != nil {
-		return fmt.Errorf("failed to connect to server: %v", err)
-	}
-	defer conn.Close()
-
-	if verbose {
-		log.Println("Connected to server")
+func TunUp(tun *water.Interface, tunIP, serverTunIP, subnetMask string, mtu int, tunName string) {
+	if err := cmd("ip", "link", "set", "dev", tun.Name(), "up"); err != nil {
+		log.Fatalf("Couldn't bring up the TUN device: %v", err)
 	}
 
-	_, err = conn.Write([]byte(secretKey))
-	if err != nil {
-		return fmt.Errorf("failed to send authentication key: %v", err)
+	if err := cmd("ip", "link", "set", "dev", tun.Name(), "mtu", fmt.Sprintf("%d", mtu)); err != nil {
+		log.Fatalf("Couldn't set MTU: %v", err)
 	}
 
-	clientToTun := make(chan []byte, 100)
-	tunToClient := make(chan []byte, 100)
+	if err := cmd("ip", "addr", "add", fmt.Sprintf("%s/%s", tunIP, subnetMask), "dev", tun.Name()); err != nil {
+		log.Fatalf("Couldn't assign private IP address to TUN device: %v", err)
+	}
 
-	go fromServer(conn, tun, clientToTun, verbose)
-	go toTun(tun, clientToTun, verbose)
-	go fromTun(tun, tunToClient, verbose)
-	go toServer(conn, tunToClient, verbose)
-
-	select {}
-}
-
-func fromServer(conn net.Conn, tun *water.Interface, clientToTun chan []byte, verbose bool) {
-	for {
-		pcktLength := make([]byte, 2)
-		if _, err := conn.Read(pcktLength); err != nil {
-			if verbose {
-				log.Printf("Couldn't read packet length from server: %v", err)
-			}
-			return
+	if iPv6(serverTunIP) {
+		if err := cmd("ip", "-6", "route", "add", fmt.Sprintf("%s/128", serverTunIP), "dev", tun.Name()); err != nil {
+			log.Fatalf("Adding route for private IPv6 failed: %v", err)
 		}
-
-		length := binary.BigEndian.Uint16(pcktLength)
-		buff := make([]byte, length)
-
-		_, err := data(conn, buff)
-		if err != nil {
-			if verbose {
-				log.Printf("Couldn't read data from server: %v", err)
-			}
-			return
-		}
-
-		clientToTun <- buff
-	}
-}
-
-func toTun(tun *water.Interface, clientToTun chan []byte, verbose bool) {
-	for buff := range clientToTun {
-		if _, err := tun.Write(buff); err != nil {
-			if verbose {
-				log.Printf("Couldn't write to TUN device: %v", err)
-			}
+	} else {
+		if err := cmd("ip", "route", "add", fmt.Sprintf("%s/32", serverTunIP), "dev", tun.Name()); err != nil {
+			log.Fatalf("Adding route for private IPv4 failed: %v", err)
 		}
 	}
 }
 
-func fromTun(tun *water.Interface, tunToClient chan []byte, verbose bool) {
-	for {
-		buff := make([]byte, 1500)
-		n, err := tun.Read(buff)
-		if err != nil {
-			if verbose {
-				log.Printf("Couldn't read from TUN device: %v", err)
-			}
-			continue
-		}
-
-		packet := make([]byte, 2+n)
-		binary.BigEndian.PutUint16(packet[:2], uint16(n))
-		copy(packet[2:], buff[:n])
-
-		tunToClient <- packet
-	}
-}
-
-func toServer(conn net.Conn, tunToClient chan []byte, verbose bool) {
-	for packet := range tunToClient {
-		if _, err := conn.Write(packet); err != nil {
-			if verbose {
-				log.Printf("Couldn't write to server: %v", err)
-			}
-		}
-	}
-}
-
-func data(conn net.Conn, buff []byte) (int, error) {
-	totalRead := 0
-	for totalRead < len(buff) {
-		n, err := conn.Read(buff[totalRead:])
-		if err != nil {
-			return totalRead, err
-		}
-		totalRead += n
-	}
-	return totalRead, nil
-}
-
-func cmd(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+func cmd(command string, args ...string) error {
+	cmd := exec.Command(command, args...)
+	cmd.Stdout = nil
+	cmd.Stderr = nil
 	return cmd.Run()
+}
+
+func iPv6(ip string) bool {
+	return water.IsIPv6(ip)
 }
