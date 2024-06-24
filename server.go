@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"time"
+	"sync"
 	"github.com/sirupsen/logrus"
 	"github.com/songgao/water"
 	"github.com/Azumi67/LocalTun_TCP/tcp_no_delay_server"
