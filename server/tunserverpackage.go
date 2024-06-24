@@ -1,68 +1,64 @@
 package tunserver
 
 import (
-	"encoding/binary"
 	"fmt"
-	"log"
+	"os/exec"
 	"net"
 	"os"
-	"os/exec"
-	"time"
-
+	"github.com/sirupsen/logrus"
 	"github.com/songgao/water"
 )
 
-func Run(serverPort int, tunIP, clientIP, subnetMask, tunName, secretKey string, mtu int, verbose bool) error {
+var log = logrus.New()
+
+func Run(serverTunIP, clientTunIP, subnetMask, tunName string, mtu int) (*water.Interface, error) {
 	config := water.Config{
 		DeviceType: water.TUN,
 	}
 	config.Name = tunName
 	tun, err := water.New(config)
 	if err != nil {
-		return fmt.Errorf("Couldn't create TUN device: %v", err)
+		return nil, fmt.Errorf("couldn't create TUN device: %v", err)
 	}
-	defer tun.Close()
 
-	tunUp(tun, tunIP, clientIP, subnetMask, mtu, tunName)
-
-	for {
-		err = serverSide(tun, serverPort, secretKey, verbose)
-		if err != nil {
-			log.Printf("Server loop error: %v. Retrying in 3 seconds..\n", err)
-			time.Sleep(3 * time.Second)
-		}
+	if err := tunUp(tun, serverTunIP, clientTunIP, subnetMask, mtu); err != nil {
+		return nil, err
 	}
+
+	return tun, nil
 }
 
-func tunUp(tun *water.Interface, tunIP, clientIP, subnetMask string, mtu int, tunName string) {
+func tunUp(tun *water.Interface, serverTunIP, clientTunIP, subnetMask string, mtu int) error {
 	if err := cmd("ip", "link", "set", "dev", tun.Name(), "up"); err != nil {
-		log.Fatalf("Couldn't bring up the TUN device: %v", err)
+		return fmt.Errorf("couldn't bring up the TUN device: %v", err)
 	}
 
 	if err := cmd("ip", "link", "set", "dev", tun.Name(), "mtu", fmt.Sprintf("%d", mtu)); err != nil {
-		log.Fatalf("Couldn't set MTU: %v", err)
+		return fmt.Errorf("couldn't set MTU: %v", err)
 	}
 
-	if err := cmd("ip", "addr", "add", fmt.Sprintf("%s/%s", tunIP, subnetMask), "dev", tun.Name()); err != nil {
-		log.Fatalf("Couldn't assign private IP address to TUN device: %v", err)
+	if err := cmd("ip", "addr", "add", fmt.Sprintf("%s/%s", serverTunIP, subnetMask), "dev", tun.Name()); err != nil {
+		return fmt.Errorf("couldn't assign private IP address to TUN device: %v", err)
 	}
 
-	if iPv6(clientIP) {
-		if err := cmd("ip", "-6", "route", "add", fmt.Sprintf("%s/128", clientIP), "dev", tun.Name()); err != nil {
-			log.Fatalf("Adding route for private IPv6 failed: %v", err)
+	if iPv6(clientTunIP) {
+		if err := cmd("ip", "-6", "route", "add", fmt.Sprintf("%s/128", clientTunIP), "dev", tun.Name()); err != nil {
+			return fmt.Errorf("adding route for private IPv6 failed: %v", err)
 		}
 	} else {
-		if err := cmd("ip", "route", "add", fmt.Sprintf("%s/32", clientIP), "dev", tun.Name()); err != nil {
-			log.Fatalf("Adding route for private IPv4 failed: %v", err)
+		if err := cmd("ip", "route", "add", fmt.Sprintf("%s/32", clientTunIP), "dev", tun.Name()); err != nil {
+			return fmt.Errorf("adding route for private IPv4 failed: %v", err)
 		}
 	}
 
 	if err := cmd("sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward"); err != nil {
-		log.Fatalf("Enabling IPv4 forwarding failed: %v", err)
+		return fmt.Errorf("enabling IPv4 forwarding failed: %v", err)
 	}
 	if err := cmd("sh", "-c", "echo 1 > /proc/sys/net/ipv6/conf/all/forwarding"); err != nil {
-		log.Fatalf("Enabling IPv6 forwarding failed: %v", err)
+		return fmt.Errorf("enabling IPv6 forwarding failed: %v", err)
 	}
+
+	return nil
 }
 
 func cmd(name string, args ...string) error {
@@ -72,6 +68,6 @@ func cmd(name string, args ...string) error {
 	return cmd.Run()
 }
 
-func iPv6(ip string) bool {
-	return net.ParseIP(ip) != nil && net.ParseIP(ip).To4() == nil
+func iPv6(s string) bool {
+	return net.ParseIP(s).To4() == nil
 }
