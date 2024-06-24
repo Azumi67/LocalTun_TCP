@@ -3,10 +3,10 @@ package smuxclient
 import (
 	"net"
 	"sync"
-
 	"github.com/sirupsen/logrus"
-	"github.com/xtaci/smux"
 	"github.com/songgao/water"
+	"github.com/xtaci/smux"
+
 )
 
 var log = logrus.New()
@@ -15,7 +15,7 @@ func HandleSmux(conn net.Conn, tun *water.Interface, verbose bool, stop chan str
 	smuxConfig := smux.DefaultConfig()
 	session, err := smux.Client(conn, smuxConfig)
 	if err != nil {
-		log.Warnf("Creating smux client session failed: %v", err)
+		log.Warnf("Creating smux session for client failed: %v", err)
 		return
 	}
 	defer session.Close()
@@ -67,7 +67,7 @@ func fromServer(conn net.Conn, tun *water.Interface, clientToTun chan []byte, ve
 			pcktLength := make([]byte, 2)
 			if _, err := conn.Read(pcktLength); err != nil {
 				log.Warnf("Couldn't read packet length from server: %v", err)
-				close(clientToTun) 
+				close(clientToTun)
 				return
 			}
 
@@ -77,7 +77,7 @@ func fromServer(conn net.Conn, tun *water.Interface, clientToTun chan []byte, ve
 			_, err := data(conn, buff)
 			if err != nil {
 				log.Warnf("Couldn't read data from server: %v", err)
-				close(clientToTun) 
+				close(clientToTun)
 				return
 			}
 
@@ -136,5 +136,9 @@ func toServer(conn net.Conn, tunToClient chan []byte, verbose bool, stop chan st
 }
 
 func data(conn net.Conn, buff []byte) (int, error) {
-	return conn.Read(buff)
+	n, err := conn.Read(buff)
+	if err != nil {
+		return 0, err
+	}
+	return n, nil
 }
