@@ -1,95 +1,78 @@
-package smuxserver
+package serversmux
 
 import (
+	"net"
+	"sync"
+	"github.com/songgao/water"
 	"github.com/xtaci/smux"
 	"github.com/sirupsen/logrus"
 	"github.com/Azumi67/LocalTun_TCP/server"
-	"net"
 )
 
 var log = logrus.New()
 
-func HandleSmux(conn net.Conn, tun *tunserver.Interface, verbose bool) {
+func HandleClient(conn net.Conn, tun *water.Interface, secretKey string, verbose bool) {
+	buff := make([]byte, len(secretKey))
+	if _, err := conn.Read(buff); err != nil {
+		log.Warnf("Couldn't read authentication key: %v", err)
+		conn.Close()
+		return
+	}
+
+	if string(buff) != secretKey {
+		log.Warn("Wrong authentication key")
+		conn.Close()
+		return
+	}
+
+	handleSmux(conn, tun, verbose)
+}
+
+func handleSmux(conn net.Conn, tun *water.Interface, verbose bool) {
 	smuxConfig := smux.DefaultConfig()
 	session, err := smux.Server(conn, smuxConfig)
 	if err != nil {
-		log.Warnf("creating Smux session for server failed: %v", err)
+		log.Warnf("Creating smux for server failed: %v", err)
+		conn.Close()
 		return
 	}
 	defer session.Close()
 
-	for {
-		stream, err := session.AcceptStream()
-		if err != nil {
-			log.Warnf("Accepting Smux stream failed: %v", err)
-			return
-		}
-
-		clientToTun := make(chan []byte, 100)
-		tunToClient := make(chan []byte, 100)
-
-		go fromClient(stream, tun, clientToTun, verbose)
-		go toTun(tun, clientToTun, verbose)
-		go fromTun(tun, tunToClient, verbose)
-		go toClient(stream, tunToClient, verbose)
-
-		select {}
+	stream, err := session.AcceptStream()
+	if err != nil {
+		log.Warnf("Accepting smux stream failed: %v", err)
+		conn.Close()
+		return
 	}
-}
 
-func fromClient(conn net.Conn, tun *tunserver.Interface, clientToTun chan []byte, verbose bool) {
-	defer close(clientToTun)
+	clientToTun := make(chan []byte, 100)
+	tunToClient := make(chan []byte, 100)
 
-	for {
-		pcktLength := make([]byte, 2)
-		if _, err := conn.Read(pcktLength); err != nil {
-			log.Warnf("Couldn't read Smux packet length from client: %v", err)
-			return
-		}
+	var wg sync.WaitGroup
 
-		length := int(pcktLength[0])<<8 | int(pcktLength[1])
-		buff := make([]byte, length)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		tunserver.FromClient(stream, tun, clientToTun, verbose)
+	}()
 
-		_, err := conn.Read(buff)
-		if err != nil {
-			log.Warnf("Couldn't read Smux data from client: %v", err)
-			return
-		}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		tunserver.ToTun(tun, clientToTun, verbose)
+	}()
 
-		clientToTun <- buff
-	}
-}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		tunserver.FromTun(tun, tunToClient, verbose)
+	}()
 
-func toTun(tun *tunserver.Interface, clientToTun chan []byte, verbose bool) {
-	for buff := range clientToTun {
-		if _, err := tun.Write(buff); err != nil {
-			log.Warnf("Couldn't write to TUN device: %v", err)
-		}
-	}
-}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		tunserver.ToClient(stream, tunToClient, verbose)
+	}()
 
-func fromTun(tun *tunserver.Interface, tunToClient chan []byte, verbose bool) {
-	for {
-		buff := make([]byte, 1500)
-		n, err := tun.Read(buff)
-		if err != nil {
-			log.Warnf("Couldn't read from TUN device: %v", err)
-			continue
-		}
-
-		packet := make([]byte, 2+n)
-		packet[0] = byte(n >> 8)
-		packet[1] = byte(n)
-		copy(packet[2:], buff[:n])
-
-		tunToClient <- packet
-	}
-}
-
-func toClient(conn net.Conn, tunToClient chan []byte, verbose bool) {
-	for packet := range tunToClient {
-		if _, err := conn.Write(packet); err != nil {
-			log.Warnf("Couldn't write to client: %v", err)
-		}
-	}
+	wg.Wait()
 }
