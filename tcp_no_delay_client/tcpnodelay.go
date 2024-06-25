@@ -2,11 +2,15 @@ package tcpnodelayclient
 
 import (
 	"net"
+	"github.com/sirupsen/logrus"
 )
 
-func NoDelay(conn net.Conn, tcpNoDelay bool) error {
+var log = logrus.New()
+
+func noDelay(conn net.Conn) {
 	if tcpConn, ok := conn.(*net.TCPConn); ok {
-		return tcpConn.SetNoDelay(tcpNoDelay)
+		if err := tcpConn.SetNoDelay(true); err != nil {
+			log.Warnf("Setting TCP_NODELAY failed: %v", err)
+		}
 	}
-	return nil
 }
