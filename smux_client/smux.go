@@ -1,21 +1,20 @@
 package smuxclient
 
 import (
+	"encoding/binary"
 	"net"
-	"sync"
 	"github.com/sirupsen/logrus"
-	"github.com/songgao/water"
 	"github.com/xtaci/smux"
-
+	"github.com/songgao/water"
 )
 
 var log = logrus.New()
 
-func HandleSmux(conn net.Conn, tun *water.Interface, verbose bool, stop chan struct{}) {
+func handleSmux(conn net.Conn, tun *water.Interface, verbose bool) {
 	smuxConfig := smux.DefaultConfig()
 	session, err := smux.Client(conn, smuxConfig)
 	if err != nil {
-		log.Warnf("Creating smux session for client failed: %v", err)
+		log.Warnf("Creating smux client session failed: %v", err)
 		return
 	}
 	defer session.Close()
@@ -25,120 +24,83 @@ func HandleSmux(conn net.Conn, tun *water.Interface, verbose bool, stop chan str
 		log.Warnf("Opening smux stream failed: %v", err)
 		return
 	}
+	defer stream.Close()
 
 	clientToTun := make(chan []byte, 100)
 	tunToClient := make(chan []byte, 100)
 
-	var wg sync.WaitGroup
+	go fromServer(stream, tun, clientToTun, verbose)
+	go toTun(tun, clientToTun, verbose)
+	go fromTun(tun, tunToClient, verbose)
+	go toServer(stream, tunToClient, verbose)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		fromServer(stream, tun, clientToTun, verbose, stop)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		toTun(tun, clientToTun, verbose, stop)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		fromTun(tun, tunToClient, verbose, stop)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		toServer(stream, tunToClient, verbose, stop)
-	}()
-
-	wg.Wait()
+	select {}
 }
 
-func fromServer(conn net.Conn, tun *water.Interface, clientToTun chan []byte, verbose bool, stop chan struct{}) {
+func fromServer(conn net.Conn, tun *water.Interface, clientToTun chan []byte, verbose bool) {
 	for {
-		select {
-		case <-stop:
+		pcktLength := make([]byte, 2)
+		if _, err := conn.Read(pcktLength); err != nil {
+			log.Warnf("Couldn't read packet length from server: %v", err)
+			close(clientToTun)
 			return
-		default:
-			pcktLength := make([]byte, 2)
-			if _, err := conn.Read(pcktLength); err != nil {
-				log.Warnf("Couldn't read packet length from server: %v", err)
-				close(clientToTun)
-				return
-			}
+		}
 
-			length := binary.BigEndian.Uint16(pcktLength)
-			buff := make([]byte, length)
+		length := binary.BigEndian.Uint16(pcktLength)
+		buff := make([]byte, length)
 
-			_, err := data(conn, buff)
-			if err != nil {
-				log.Warnf("Couldn't read data from server: %v", err)
-				close(clientToTun)
-				return
-			}
+		_, err := data(conn, buff)
+		if err != nil {
+			log.Warnf("Couldn't read data from server: %v", err)
+			close(clientToTun)
+			return
+		}
 
-			clientToTun <- buff
+		clientToTun <- buff
+	}
+}
+
+func toTun(tun *water.Interface, clientToTun chan []byte, verbose bool) {
+	for buff := range clientToTun {
+		if _, err := tun.Write(buff); err != nil {
+			log.Warnf("Couldn't write to TUN device: %v", err)
 		}
 	}
 }
 
-func toTun(tun *water.Interface, clientToTun chan []byte, verbose bool, stop chan struct{}) {
+func fromTun(tun *water.Interface, tunToClient chan []byte, verbose bool) {
 	for {
-		select {
-		case <-stop:
-			return
-		case buff := <-clientToTun:
-			if _, err := tun.Write(buff); err != nil {
-				log.Warnf("Couldn't write to TUN device: %v", err)
-			}
+		buff := make([]byte, 1500)
+		n, err := tun.Read(buff)
+		if err != nil {
+			log.Warnf("Couldn't read from TUN device: %v", err)
+			continue
 		}
+
+		packet := make([]byte, 2+n)
+		binary.BigEndian.PutUint16(packet[:2], uint16(n))
+		copy(packet[2:], buff[:n])
+
+		tunToClient <- packet
 	}
 }
 
-func fromTun(tun *water.Interface, tunToClient chan []byte, verbose bool, stop chan struct{}) {
-	for {
-		select {
-		case <-stop:
-			return
-		default:
-			buff := make([]byte, 1500)
-			n, err := tun.Read(buff)
-			if err != nil {
-				log.Warnf("Couldn't read from TUN device: %v", err)
-				continue
-			}
-
-			packet := make([]byte, 2+n)
-			binary.BigEndian.PutUint16(packet[:2], uint16(n))
-			copy(packet[2:], buff[:n])
-
-			tunToClient <- packet
-		}
-	}
-}
-
-func toServer(conn net.Conn, tunToClient chan []byte, verbose bool, stop chan struct{}) {
-	for {
-		select {
-		case <-stop:
-			return
-		case packet := <-tunToClient:
-			if _, err := conn.Write(packet); err != nil {
-				log.Warnf("Couldn't write to server: %v", err)
-				return
-			}
+func toServer(conn net.Conn, tunToClient chan []byte, verbose bool) {
+	for packet := range tunToClient {
+		if _, err := conn.Write(packet); err != nil {
+			log.Warnf("Couldn't write to server: %v", err)
 		}
 	}
 }
 
 func data(conn net.Conn, buff []byte) (int, error) {
-	n, err := conn.Read(buff)
-	if err != nil {
-		return 0, err
+	totalRead := 0
+	for totalRead < len(buff) {
+		n, err := conn.Read(buff[totalRead:])
+		if err != nil {
+			return totalRead, err
+		}
+		totalRead += n
 	}
-	return n, nil
+	return totalRead, nil
 }
