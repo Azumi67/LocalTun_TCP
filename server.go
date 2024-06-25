@@ -1,24 +1,25 @@
 package main
 
 import (
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"net"
 	"os"
-	"os/exec"
 	"time"
-	"sync"
 	"github.com/sirupsen/logrus"
 	"github.com/songgao/water"
-	"github.com/Azumi67/LocalTun_TCP/tcp_no_delay_server"
+	"github.com/Azumi67/LocalTun_TCP/server"
 	"github.com/Azumi67/LocalTun_TCP/server_smux"
+	"github.com/Azumi67/LocalTun_TCP/tcp_no_delay_server"
+	"github.com/Azumi67/LocalTun_TCP/heartbeat_server"
 )
 
 var log = logrus.New()
 
 func main() {
 	serverPort := flag.Int("server-port", 800, "Server port")
-	serverTunIP := flag.String("server-private", "2001:db8::1", "Server private IP address")
+	tunIP := flag.String("server-private", "2001:db8::1", "Server Private IP address")
 	clientTunIP := flag.String("client-private", "2001:db8::2", "Client Private IP address")
 	subnetMask := flag.String("subnet", "64", "Subnet mask (e.g: 24 or 64)")
 	tunName := flag.String("device", "tun2", "TUN device name")
@@ -26,7 +27,9 @@ func main() {
 	mtu := flag.Int("mtu", 1480, "MTU for TUN device")
 	verbose := flag.Bool("verbose", false, "Enable logging")
 	useSmux := flag.Bool("smux", false, "Enable smux multiplexing")
-	tcpNoDelay := flag.Bool("tcp-nodelay", false, "Enable TCPNODELAY")
+	enableHeartbeat := flag.Bool("heartbeat", false, "Enable heartbeat")
+	heartbeatInterval := flag.Int("heartbeat-interval", 30, "Heartbeat interval in seconds")
+	tcpNoDelay := flag.Bool("tcp-nodelay", false, "Enable TCP_NODELAY")
 
 	flag.Parse()
 
@@ -47,65 +50,129 @@ func main() {
 	}
 	defer tun.Close()
 
-	tunUp(tun, *serverTunIP, *clientTunIP, *subnetMask, *mtu, *tunName)
+	tunserver.TunUp(tun, *tunIP, *clientTunIP, *subnetMask, *mtu, *tunName)
+
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", *serverPort))
+	if err != nil {
+		log.Fatalf("failed to listen on port %d: %v", *serverPort, err)
+	}
+	defer ln.Close()
+
+	log.Infof("Server listening on port %d", *serverPort)
 
 	for {
-		ln, err := net.Listen("tcp", fmt.Sprintf(":%d", *serverPort))
-		if err != nil {
-			log.Errorf("failed to listen on port %d: %v", err)
-			time.Sleep(5 * time.Second)
-			continue
-		}
-		defer ln.Close()
-
-		log.Infof("Server listening on port %d", *serverPort)
-
 		conn, err := ln.Accept()
 		if err != nil {
-			log.Warnf("failed to accept any connection: %v", err)
-			ln.Close()
-			time.Sleep(5 * time.Second)
+			log.Printf("Couldn't accept any connection: %v", err)
 			continue
 		}
 
-		log.Info("Client connected")
-		if *useSmux {
-			serversmux.HandleClient(conn, tun, *secretKey, *verbose)
-		} else {
-			tcpnodelayserver.HandleClient(conn, tun, *secretKey, *verbose, *tcpNoDelay)
+		if *tcpNoDelay {
+			tcpnodelayserver.noDelay(conn)
+		}
+
+		go handleClient(conn, tun, *secretKey, *verbose, *useSmux, *enableHeartbeat, *heartbeatInterval)
+	}
+}
+
+func handleClient(conn net.Conn, tun *water.Interface, secretKey string, verbose bool, useSmux bool, enableHeartbeat bool, heartbeatInterval int) {
+	defer conn.Close()
+
+	authBuf := make([]byte, len(secretKey))
+	if _, err := conn.Read(authBuf); err != nil {
+		log.Warnf("Failed to read authentication key: %v", err)
+		return
+	}
+
+	if string(authBuf) != secretKey {
+		log.Warnf("Wrong authentication key")
+		return
+	}
+
+	if enableHeartbeat {
+		heartbeatserver.trueHeartbeat(conn, heartbeatInterval)
+	}
+
+	if useSmux {
+		serversmux.HandleSmux(conn, tun, verbose)
+		return
+	}
+
+	clientToTun := make(chan []byte, 100)
+	tunToClient := make(chan []byte, 100)
+
+	go fromClient(conn, tun, clientToTun, verbose)
+	go toTun(tun, clientToTun, verbose)
+	go fromTun(tun, tunToClient, verbose)
+	go toClient(conn, tunToClient, verbose)
+
+	select {}
+}
+
+func fromClient(conn net.Conn, tun *water.Interface, clientToTun chan []byte, verbose bool) {
+	for {
+		pcktLength := make([]byte, 2)
+		if _, err := conn.Read(pcktLength); err != nil {
+			log.Warnf("Couldn't read packet length from client: %v", err)
+			close(clientToTun)
+			return
+		}
+
+		length := binary.BigEndian.Uint16(pcktLength)
+		buff := make([]byte, length)
+
+		_, err := data(conn, buff)
+		if err != nil {
+			log.Warnf("Couldn't read data from client: %v", err)
+			close(clientToTun)
+			return
+		}
+
+		clientToTun <- buff
+	}
+}
+
+func toTun(tun *water.Interface, clientToTun chan []byte, verbose bool) {
+	for buff := range clientToTun {
+		if _, err := tun.Write(buff); err != nil {
+			log.Warnf("Couldn't write to TUN device: %v", err)
 		}
 	}
 }
 
-func tunUp(tun *water.Interface, serverTunIP, clientTunIP, subnetMask string, mtu int, tunName string) {
-	if err := cmd("ip", "link", "set", "dev", tun.Name(), "up"); err != nil {
-		log.Fatalf("Couldn't bring up the TUN device: %v", err)
-	}
-
-	if err := cmd("ip", "link", "set", "dev", tun.Name(), "mtu", fmt.Sprintf("%d", mtu)); err != nil {
-		log.Fatalf("Couldn't set MTU: %v", err)
-	}
-
-	if err := cmd("ip", "addr", "add", fmt.Sprintf("%s/%s", serverTunIP, subnetMask), "dev", tun.Name()); err != nil {
-		log.Fatalf("Couldn't assign private IP address to TUN device: %v", err)
-	}
-
-	if iPv6(clientTunIP) {
-		if err := cmd("ip", "-6", "route", "add", fmt.Sprintf("%s/128", clientTunIP), "dev", tun.Name()); err != nil {
-			log.Fatalf("Adding route for private IPv6 failed: %v", err)
+func fromTun(tun *water.Interface, tunToClient chan []byte, verbose bool) {
+	for {
+		buff := make([]byte, 1500)
+		n, err := tun.Read(buff)
+		if err != nil {
+			log.Warnf("Couldn't read from TUN device: %v", err)
+			continue
 		}
-	} else {
-		if err := cmd("ip", "route", "add", fmt.Sprintf("%s/32", clientTunIP), "dev", tun.Name()); err != nil {
-			log.Fatalf("Adding route for private IPv4 failed: %v", err)
+
+		packet := make([]byte, 2+n)
+		binary.BigEndian.PutUint16(packet[:2], uint16(n))
+		copy(packet[2:], buff[:n])
+
+		tunToClient <- packet
+	}
+}
+
+func toClient(conn net.Conn, tunToClient chan []byte, verbose bool) {
+	for packet := range tunToClient {
+		if _, err := conn.Write(packet); err != nil {
+			log.Warnf("Couldn't write to client: %v", err)
 		}
 	}
 }
 
-func cmd(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	return cmd.Run()
-}
-
-func iPv6(address string) bool {
-	return net.ParseIP(address).To4() == nil
+func data(conn net.Conn, buff []byte) (int, error) {
+	totalRead := 0
+	for totalRead < len(buff) {
+		n, err := conn.Read(buff[totalRead:])
+		if err != nil {
+			return totalRead, err
+		}
+		totalRead += n
+	}
+	return totalRead, nil
 }
