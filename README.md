@@ -12,7 +12,7 @@
 
 **این مورد tcpnodelay و logrus اضافه شد**
 
-**گزینه heartbeat و heartbeat interval و ping interval اضافه شد**
+**گزینه heartbeat و heartbeat interval و ping interval اضافه شد(مشکلی در heartbeat سرور وجود دارد)**
 
 **گزینه سرویس نیم برای ریستارت کلاینت در صورتی که سرور و کلاینت به هم دیگر پینگ نداشتند، اضافه شد به طور مثال service-name azumilocal-**
 
