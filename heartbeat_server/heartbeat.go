@@ -8,7 +8,7 @@ import (
 
 var log = logrus.New()
 
-func enableHeartbeat(conn net.Conn, interval int) {
+func trueHeartbeat(conn net.Conn, interval int) {
 	go func() {
 		heartbeatTiktok := time.NewTicker(time.Duration(interval) * time.Second)
 		defer heartbeatTiktok.Stop()
