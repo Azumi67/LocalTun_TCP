@@ -8,6 +8,8 @@
 
 **این مورد xtaci/smux به همراه heartbeat به پروژه اضافه شد**
 
+**گزینه smux با heartbeat هم زمان استفاده نشود.خود smux کافی میباشد**
+
 **این مورد tcpnodelay و logrus اضافه شد**
 
 **گزینه ping interval اضافه شد**
