@@ -1,7 +1,6 @@
 package monitorclient
 
 import (
-	"fmt"
 	"os/exec"
 	"time"
 	"github.com/sirupsen/logrus"
@@ -22,7 +21,7 @@ func monitor(serverTunIP string, pingInterval int, serviceName string) {
 
 func ping(serverTunIP string) error {
 	var cmd *exec.Cmd
-	if isIPv6(serverTunIP) {
+	if iPv6(serverTunIP) {
 		cmd = exec.Command("ping6", "-c", "1", serverTunIP)
 	} else {
 		cmd = exec.Command("ping", "-c", "1", serverTunIP)
@@ -39,10 +38,10 @@ func restart(serviceName string) {
 	cmd := exec.Command("systemctl", "restart", serviceName)
 	err := cmd.Run()
 	if err != nil {
-		log.Fatalf("Restart client failed: %v", err)
+		log.Fatalf("Restarting client failed: %v", err)
 	}
 }
 
-func isIPv6(ip string) bool {
-	return net.ParseIP(ip).To4() == nil
+func iPv6(ip string) bool {
+	return net.ParseIP(ip) != nil && net.ParseIP(ip).To4() == nil
 }
