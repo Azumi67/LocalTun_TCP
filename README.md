@@ -6,6 +6,8 @@
 
 **فعلا این پروژه در حالت پیش نویس است و باید صبر کنید تا کامل شود**
 
+**مورد Challenge n Response Authentication به همراه unique nonce و Sha 256 به همراه expiry time اضافه شد**(بعد از تست اضافه میشود)
+
 **این مورد xtaci/smux به همراه heartbeat به پروژه اضافه شد**
 
 **گزینه smux با heartbeat هم زمان استفاده نشود.خود smux کافی میباشد**
