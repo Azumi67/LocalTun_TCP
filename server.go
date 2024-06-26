@@ -1,18 +1,21 @@
 package main
 
 import (
-	"encoding/binary"
 	"flag"
 	"fmt"
 	"net"
 	"os"
+	"sync"
 	"time"
 	"github.com/sirupsen/logrus"
 	"github.com/songgao/water"
-	"github.com/Azumi67/LocalTun_TCP/server"
+	"github.com/xtaci/smux"
+	"github.com/Azumi67/LocalTun_TCP/heartbeat_server"
+	"github.com/Azumi67/LocalTun_TCP/monitor_server"
+	"github.com/Azumi67/LocalTun_TCP/nonce_server"
 	"github.com/Azumi67/LocalTun_TCP/server_smux"
 	"github.com/Azumi67/LocalTun_TCP/tcp_no_delay_server"
-	"github.com/Azumi67/LocalTun_TCP/heartbeat_server"
+	"github.com/Azumi67/LocalTun_TCP/server"
 )
 
 var log = logrus.New()
@@ -30,6 +33,8 @@ func main() {
 	enableHeartbeat := flag.Bool("heartbeat", false, "Enable heartbeat")
 	heartbeatInterval := flag.Int("heartbeat-interval", 30, "Heartbeat interval in seconds")
 	tcpNoDelay := flag.Bool("tcp-nodelay", false, "Enable TCP_NODELAY")
+	pingInterval := flag.Int("ping-interval", 10, "Ping interval in seconds")
+	serviceName := flag.String("service-name", "azumilocal", "name of the service to restart upon failure")
 
 	flag.Parse()
 
@@ -60,16 +65,17 @@ func main() {
 
 	log.Infof("Server listening on port %d", *serverPort)
 
+	go monitorserver.Monitor(*clientTunIP, *pingInterval, *serviceName)
+	go nonceserver.NonceDel()
+
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			log.Printf("Couldn't accept any connection: %v", err)
+			log.Warnf("Couldn't accept any connection: %v", err)
 			continue
 		}
 
-		if *tcpNoDelay {
-			tcpnodelayserver.noDelay(conn)
-		}
+		tcpnodelayserver.noDelay(conn, *tcpNoDelay)
 
 		go handleClient(conn, tun, *secretKey, *verbose, *useSmux, *enableHeartbeat, *heartbeatInterval)
 	}
@@ -78,19 +84,35 @@ func main() {
 func handleClient(conn net.Conn, tun *water.Interface, secretKey string, verbose bool, useSmux bool, enableHeartbeat bool, heartbeatInterval int) {
 	defer conn.Close()
 
-	authBuf := make([]byte, len(secretKey))
-	if _, err := conn.Read(authBuf); err != nil {
-		log.Warnf("Failed to read authentication key: %v", err)
+	nonce, err := nonceserver.UniqueNonce()
+	if err != nil {
+		log.Warnf("Generating nonce failed: %v", err)
 		return
 	}
 
-	if string(authBuf) != secretKey {
-		log.Warnf("Wrong authentication key")
+	if _, err := conn.Write([]byte(nonce)); err != nil {
+		log.Warnf("Sending unique nonce failed: %v", err)
+		return
+	}
+
+	responseBuf := make([]byte, 32)
+	if _, err := conn.Read(responseBuf); err != nil {
+		log.Warnf("Reading the response wasn't possible: %v", err)
+		return
+	}
+
+	hashkey := sha256.New()
+	hashkey.Write([]byte(nonce))
+	hashkey.Write([]byte(secretKey))
+	expectThisHash := hashkey.Sum(nil)
+
+	if !nonceserver.CalHashes(responseBuf, expectThisHash) {
+		log.Warnf("Wrong authentication response")
 		return
 	}
 
 	if enableHeartbeat {
-		heartbeatserver.trueHeartbeat(conn, heartbeatInterval)
+		go heartbeatserver.trueHeartbeat(conn, heartbeatInterval)
 	}
 
 	if useSmux {
@@ -101,78 +123,11 @@ func handleClient(conn net.Conn, tun *water.Interface, secretKey string, verbose
 	clientToTun := make(chan []byte, 100)
 	tunToClient := make(chan []byte, 100)
 
-	go fromClient(conn, tun, clientToTun, verbose)
-	go toTun(tun, clientToTun, verbose)
-	go fromTun(tun, tunToClient, verbose)
-	go toClient(conn, tunToClient, verbose)
+	go tunserver.FromClient(conn, tun, clientToTun, verbose)
+	go tunserver.ToTun(tun, clientToTun, verbose)
+	go tunserver.FromTun(tun, tunToClient, verbose)
+	go tunserver.ToClient(conn, tunToClient, verbose)
 
 	select {}
 }
-
-func fromClient(conn net.Conn, tun *water.Interface, clientToTun chan []byte, verbose bool) {
-	for {
-		pcktLength := make([]byte, 2)
-		if _, err := conn.Read(pcktLength); err != nil {
-			log.Warnf("Couldn't read packet length from client: %v", err)
-			close(clientToTun)
-			return
-		}
-
-		length := binary.BigEndian.Uint16(pcktLength)
-		buff := make([]byte, length)
-
-		_, err := data(conn, buff)
-		if err != nil {
-			log.Warnf("Couldn't read data from client: %v", err)
-			close(clientToTun)
-			return
-		}
-
-		clientToTun <- buff
-	}
-}
-
-func toTun(tun *water.Interface, clientToTun chan []byte, verbose bool) {
-	for buff := range clientToTun {
-		if _, err := tun.Write(buff); err != nil {
-			log.Warnf("Couldn't write to TUN device: %v", err)
-		}
-	}
-}
-
-func fromTun(tun *water.Interface, tunToClient chan []byte, verbose bool) {
-	for {
-		buff := make([]byte, 1500)
-		n, err := tun.Read(buff)
-		if err != nil {
-			log.Warnf("Couldn't read from TUN device: %v", err)
-			continue
-		}
-
-		packet := make([]byte, 2+n)
-		binary.BigEndian.PutUint16(packet[:2], uint16(n))
-		copy(packet[2:], buff[:n])
-
-		tunToClient <- packet
-	}
-}
-
-func toClient(conn net.Conn, tunToClient chan []byte, verbose bool) {
-	for packet := range tunToClient {
-		if _, err := conn.Write(packet); err != nil {
-			log.Warnf("Couldn't write to client: %v", err)
-		}
-	}
-}
-
-func data(conn net.Conn, buff []byte) (int, error) {
-	totalRead := 0
-	for totalRead < len(buff) {
-		n, err := conn.Read(buff[totalRead:])
-		if err != nil {
-			return totalRead, err
-		}
-		totalRead += n
-	}
-	return totalRead, nil
-}
+//buhbye
