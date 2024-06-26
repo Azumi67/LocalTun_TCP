@@ -7,10 +7,12 @@ import (
 
 var log = logrus.New()
 
-func noDelay(conn net.Conn) {
-	if tcpConn, ok := conn.(*net.TCPConn); ok {
-		if err := tcpConn.SetNoDelay(true); err != nil {
-			log.Warnf("Setting TCP_NODELAY failed: %v", err)
+func noDelay(conn net.Conn, tcpNoDelay bool) {
+	if tcpNoDelay {
+		if tcpConn, ok := conn.(*net.TCPConn); ok {
+			if err := tcpConn.SetNoDelay(true); err != nil {
+				log.Warnf("Setting TCP_NODELAY failed: %v", err)
+			}
 		}
 	}
 }
