@@ -1,9 +1,10 @@
 package tunserver
 
 import (
+	"encoding/binary"
 	"fmt"
-	"os/exec"
 	"net"
+	"os/exec"
 	"github.com/sirupsen/logrus"
 	"github.com/songgao/water"
 )
@@ -23,7 +24,7 @@ func TunUp(tun *water.Interface, tunIP, clientTunIP, subnetMask string, mtu int,
 		log.Fatalf("Couldn't assign private IP address to TUN device: %v", err)
 	}
 
-	if isIPv6(clientTunIP) {
+	if iPv6(clientTunIP) {
 		if err := cmd("ip", "-6", "route", "add", fmt.Sprintf("%s/128", clientTunIP), "dev", tun.Name()); err != nil {
 			log.Fatalf("Adding route for private IPv6 failed: %v", err)
 		}
@@ -41,11 +42,84 @@ func TunUp(tun *water.Interface, tunIP, clientTunIP, subnetMask string, mtu int,
 	}
 }
 
-func cmd(command string, args ...string) error {
-	cmd := exec.Command(command, args...)
-	return cmd.Run()
+func FromClient(conn net.Conn, tun *water.Interface, clientToTun chan []byte, verbose bool) {
+	for {
+		pcktLength := make([]byte, 2)
+		if _, err := conn.Read(pcktLength); err != nil {
+			log.Warnf("Couldn't read packet length from client: %v", err)
+			close(clientToTun)
+			return
+		}
+
+		length := binary.BigEndian.Uint16(pcktLength)
+		buff := make([]byte, length)
+
+		_, err := data(conn, buff)
+		if err != nil {
+			log.Warnf("Couldn't read data from client: %v", err)
+			close(clientToTun)
+			return
+		}
+
+		clientToTun <- buff
+	}
 }
 
-func isIPv6(ip string) bool {
-	return net.ParseIP(ip).To4() == nil
+func ToTun(tun *water.Interface, clientToTun chan []byte, verbose bool) {
+	for buff := range clientToTun {
+		if _, err := tun.Write(buff); err != nil {
+			log.Warnf("Couldn't write to TUN device: %v", err)
+		}
+	}
+}
+
+func FromTun(tun *water.Interface, tunToClient chan []byte, verbose bool) {
+	for {
+		buff := make([]byte, 1500)
+		n, err := tun.Read(buff)
+		if err != nil {
+			log.Warnf("Couldn't read from TUN device: %v", err)
+			continue
+		}
+
+		packet := make([]byte, 2+n)
+		binary.BigEndian.PutUint16(packet[:2], uint16(n))
+		copy(packet[2:], buff[:n])
+
+		tunToClient <- packet
+	}
+}
+
+func ToClient(conn net.Conn, tunToClient chan []byte, verbose bool) {
+	for packet := range tunToClient {
+		_, err := conn.Write(packet)
+		if err != nil {
+			log.Warnf("Couldn't write to client: %v", err)
+			return
+		}
+	}
+}
+
+func data(conn net.Conn, buff []byte) (int, error) {
+	totalRead := 0
+	for totalRead < len(buff) {
+		n, err := conn.Read(buff[totalRead:])
+		if err != nil {
+			return totalRead, err
+		}
+		totalRead += n
+	}
+	return totalRead, nil
+}
+
+func cmd(command string, args ...string) error {
+	cmd := exec.Command(command, args...)
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func iPv6(address string) bool {
+	return net.ParseIP(address).To4() == nil
 }
