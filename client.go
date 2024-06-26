@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/binary"
 	"flag"
 	"fmt"
 	"net"
@@ -9,11 +8,13 @@ import (
 	"time"
 	"github.com/sirupsen/logrus"
 	"github.com/songgao/water"
+	"github.com/xtaci/smux"
 	"github.com/Azumi67/LocalTun_TCP/client"
 	"github.com/Azumi67/LocalTun_TCP/smux_client"
-	"github.com/Azumi67/LocalTun_TCP/tcp_no_delay_client"
 	"github.com/Azumi67/LocalTun_TCP/heartbeat_client"
 	"github.com/Azumi67/LocalTun_TCP/monitor_client"
+	"github.com/Azumi67/LocalTun_TCP/hash"
+	"github.com/Azumi67/LocalTun_TCP/tcp_no_delay_client"
 )
 
 var log = logrus.New()
@@ -55,6 +56,7 @@ func main() {
 	defer tun.Close()
 
 	tunclient.TunUp(tun, *tunIP, *serverTunIP, *subnetMask, *mtu, *tunName)
+
 	go monitorclient.monitor(*serverTunIP, *pingInterval, *serviceName)
 
 	for {
@@ -66,7 +68,7 @@ func main() {
 		}
 
 		if *tcpNoDelay {
-			tcpnodelayclient.noDelay(conn)
+			tcpnodelayclient.SetTCPNoDelay(conn)
 		}
 
 		defer conn.Close()
@@ -77,27 +79,67 @@ func main() {
 }
 
 func handleServer(conn net.Conn, tun *water.Interface, secretKey string, verbose bool, useSmux bool, enableHeartbeat bool, heartbeatInterval int) {
-	if _, err := conn.Write([]byte(secretKey)); err != nil {
-		log.Warnf("Couldn't send authentication key: %v", err)
+	challenge := make([]byte, 32)
+	if _, err := conn.Read(challenge); err != nil {
+		log.Warnf("Couldn't read challenge from server: %v", err)
+		return
+	}
+
+	hashedKey := hashclient.GenHash(challenge, secretKey)
+
+	if _, err := conn.Write(hashedKey); err != nil {
+		log.Warnf("Couldn't send auth response: %v", err)
 		return
 	}
 
 	if enableHeartbeat {
-		heartbeatclient.trueHeartbeat(conn, heartbeatInterval)
+		go heartbeatclient.trueHeartbeat(conn, heartbeatInterval)
 	}
 
 	if useSmux {
-		clientmux.handleSmux(conn, tun, verbose)
+		smuxclient.HandleSmux(conn, tun, verbose)
 		return
 	}
 
 	clientToTun := make(chan []byte, 100)
 	tunToClient := make(chan []byte, 100)
 
-	go clientmux.FromServer(conn, tun, clientToTun, verbose)
-	go clientmux.ToTun(tun, clientToTun, verbose)
-	go clientmux.FromTun(tun, tunToClient, verbose)
-	go clientmux.ToServer(conn, tunToClient, verbose)
+	go fromServer(conn, tun, clientToTun, verbose)
+	go tunclient.ToTun(tun, clientToTun, verbose)
+	go tunclient.FromTun(tun, tunToClient, verbose)
+	go toServer(conn, tunToClient, verbose)
 
 	select {}
+}
+
+func fromServer(conn net.Conn, tun *water.Interface, clientToTun chan []byte, verbose bool) {
+	for {
+		pcktLength := make([]byte, 2)
+		if _, err := conn.Read(pcktLength); err != nil {
+			log.Warnf("Couldn't read packet length from server: %v", err)
+			close(clientToTun)
+			return
+		}
+
+		length := binary.BigEndian.Uint16(pcktLength)
+		buff := make([]byte, length)
+
+		_, err := tunclient.Data(conn, buff)
+		if err != nil {
+			log.Warnf("Couldn't read data from server: %v", err)
+			close(clientToTun)
+			return
+		}
+
+		clientToTun <- buff
+	}
+}
+
+func toServer(conn net.Conn, tunToClient chan []byte, verbose bool) {
+	for packet := range tunToClient {
+		_, err := conn.Write(packet)
+		if err != nil {
+			log.Warnf("Couldn't write to server: %v", err)
+		}
+	}
 }
