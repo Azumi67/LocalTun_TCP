@@ -16,7 +16,7 @@ import (
 	"github.com/Azumi67/LocalTun_TCP/nonce_server"
 	"github.com/Azumi67/LocalTun_TCP/server_smux"
 	"github.com/Azumi67/LocalTun_TCP/tcp_no_delay_server"
-	"github.com/Azumi67/LocalTun_TCP/tun_server"
+	"github.com/Azumi67/LocalTun_TCP/server"
 	"github.com/Azumi67/LocalTun_TCP/worker_server"
 )
 
