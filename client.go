@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"runtime"
+	"sync"
 	"time"
 	"github.com/sirupsen/logrus"
 	"github.com/songgao/water"
-	"github.com/xtaci/smux"
 	"github.com/Azumi67/LocalTun_TCP/client"
 	"github.com/Azumi67/LocalTun_TCP/smux_client"
 	"github.com/Azumi67/LocalTun_TCP/heartbeat_client"
 	"github.com/Azumi67/LocalTun_TCP/monitor_client"
 	"github.com/Azumi67/LocalTun_TCP/hash"
 	"github.com/Azumi67/LocalTun_TCP/tcp_no_delay_client"
+	"github.com/Azumi67/LocalTun_TCP/worker_client"
 )
 
 var log = logrus.New()
@@ -32,9 +34,10 @@ func main() {
 	useSmux := flag.Bool("smux", false, "Enable smux multiplexing")
 	enableHeartbeat := flag.Bool("heartbeat", false, "Enable heartbeat")
 	heartbeatInterval := flag.Int("heartbeat-interval", 30, "Heartbeat interval in seconds")
-	pingInterval := flag.Int("ping-interval", 10, "Ping interval in seconds")
 	tcpNoDelay := flag.Bool("tcp-nodelay", false, "Enable TCP_NODELAY")
+	pingInterval := flag.Int("ping-interval", 10, "Ping interval in seconds")
 	serviceName := flag.String("service-name", "azumilocal", "name of the service to restart upon failure")
+	workers := flag.Int("worker", runtime.NumCPU(), "number of workers or based on the number of CPU cores")
 
 	flag.Parse()
 
@@ -57,7 +60,15 @@ func main() {
 
 	tunclient.TunUp(tun, *tunIP, *serverTunIP, *subnetMask, *mtu, *tunName)
 
-	go monitorclient.monitor(*serverTunIP, *pingInterval, *serviceName)
+	go monitorclient.Monitor(*serverTunIP, *pingInterval, *serviceName)
+
+	var wg sync.WaitGroup
+	workerOnechan := make(chan net.Conn, *workers)
+
+	for i := 0; i < *workers; i++ {
+		wg.Add(1)
+		go workerclient.Worker(tun, workerOnechan, *secretKey, *verbose, *useSmux, *enableHeartbeat, *heartbeatInterval, &wg)
+	}
 
 	for {
 		conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", *kharejAddr, *serverPort))
@@ -68,78 +79,15 @@ func main() {
 		}
 
 		if *tcpNoDelay {
-			tcpnodelayclient.SetTCPNoDelay(conn)
+			tcpnodelayclient.noDelay(conn)
 		}
 
 		defer conn.Close()
 
 		log.Info("Connected to server")
-		handleServer(conn, tun, *secretKey, *verbose, *useSmux, *enableHeartbeat, *heartbeatInterval)
-	}
-}
-
-func handleServer(conn net.Conn, tun *water.Interface, secretKey string, verbose bool, useSmux bool, enableHeartbeat bool, heartbeatInterval int) {
-	challenge := make([]byte, 32)
-	if _, err := conn.Read(challenge); err != nil {
-		log.Warnf("Couldn't read challenge from server: %v", err)
-		return
+		workerOnechan <- conn
 	}
 
-	hashedKey := hashclient.GenHash(challenge, secretKey)
-
-	if _, err := conn.Write(hashedKey); err != nil {
-		log.Warnf("Couldn't send auth response: %v", err)
-		return
-	}
-
-	if enableHeartbeat {
-		go heartbeatclient.trueHeartbeat(conn, heartbeatInterval)
-	}
-
-	if useSmux {
-		smuxclient.HandleSmux(conn, tun, verbose)
-		return
-	}
-
-	clientToTun := make(chan []byte, 100)
-	tunToClient := make(chan []byte, 100)
-
-	go fromServer(conn, tun, clientToTun, verbose)
-	go tunclient.ToTun(tun, clientToTun, verbose)
-	go tunclient.FromTun(tun, tunToClient, verbose)
-	go toServer(conn, tunToClient, verbose)
-
-	select {}
-}
-
-func fromServer(conn net.Conn, tun *water.Interface, clientToTun chan []byte, verbose bool) {
-	for {
-		pcktLength := make([]byte, 2)
-		if _, err := conn.Read(pcktLength); err != nil {
-			log.Warnf("Couldn't read packet length from server: %v", err)
-			close(clientToTun)
-			return
-		}
-
-		length := binary.BigEndian.Uint16(pcktLength)
-		buff := make([]byte, length)
-
-		_, err := tunclient.Data(conn, buff)
-		if err != nil {
-			log.Warnf("Couldn't read data from server: %v", err)
-			close(clientToTun)
-			return
-		}
-
-		clientToTun <- buff
-	}
-}
-
-func toServer(conn net.Conn, tunToClient chan []byte, verbose bool) {
-	for packet := range tunToClient {
-		_, err := conn.Write(packet)
-		if err != nil {
-			log.Warnf("Couldn't write to server: %v", err)
-		}
-	}
+	close(workerOnechan)
+	wg.Wait()
 }
