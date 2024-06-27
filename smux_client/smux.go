@@ -2,9 +2,9 @@ package smuxclient
 
 import (
 	"net"
-	"github.com/sirupsen/logrus"
 	"github.com/songgao/water"
 	"github.com/xtaci/smux"
+	"github.com/sirupsen/logrus"
 )
 
 var log = logrus.New()
@@ -29,8 +29,8 @@ func HandleSmux(conn net.Conn, tun *water.Interface, verbose bool) {
 	tunToClient := make(chan []byte, 100)
 
 	go fromServer(stream, tun, clientToTun, verbose)
-	go tunclient.ToTun(tun, clientToTun, verbose)
-	go tunclient.FromTun(tun, tunToClient, verbose)
+	go toTun(tun, clientToTun, verbose)
+	go fromTun(tun, tunToClient, verbose)
 	go toServer(stream, tunToClient, verbose)
 
 	select {}
@@ -48,7 +48,7 @@ func fromServer(conn net.Conn, tun *water.Interface, clientToTun chan []byte, ve
 		length := binary.BigEndian.Uint16(pcktLength)
 		buff := make([]byte, length)
 
-		_, err := tunclient.Data(conn, buff)
+		_, err := data(conn, buff)
 		if err != nil {
 			log.Warnf("Couldn't read data from server: %v", err)
 			close(clientToTun)
@@ -56,6 +56,31 @@ func fromServer(conn net.Conn, tun *water.Interface, clientToTun chan []byte, ve
 		}
 
 		clientToTun <- buff
+	}
+}
+
+func toTun(tun *water.Interface, clientToTun chan []byte, verbose bool) {
+	for buff := range clientToTun {
+		if _, err := tun.Write(buff); err != nil {
+			log.Warnf("Couldn't write to TUN device: %v", err)
+		}
+	}
+}
+
+func fromTun(tun *water.Interface, tunToClient chan []byte, verbose bool) {
+	for {
+		buff := make([]byte, 1500)
+		n, err := tun.Read(buff)
+		if err != nil {
+			log.Warnf("Couldn't read from TUN device: %v", err)
+			continue
+		}
+
+		packet := make([]byte, 2+n)
+		binary.BigEndian.PutUint16(packet[:2], uint16(n))
+		copy(packet[2:], buff[:n])
+
+		tunToClient <- packet
 	}
 }
 
@@ -67,3 +92,16 @@ func toServer(conn net.Conn, tunToClient chan []byte, verbose bool) {
 		}
 	}
 }
+
+func data(conn net.Conn, buff []byte) (int, error) {
+	totalRead := 0
+	for totalRead < len(buff) {
+		n, err := conn.Read(buff[totalRead:])
+		if err != nil {
+			return totalRead, err
+		}
+		totalRead += n
+	}
+	return totalRead, nil
+}
+//it might change
