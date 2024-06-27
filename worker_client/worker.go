@@ -4,8 +4,8 @@ import (
 	"net"
 	"sync"
 	"github.com/songgao/water"
-	"github.com/Azumi67/LocalTun_TCP/clientsmux"
-	"github.com/Azumi67/LocalTun_TCP/heartbeatclient"
+	"github.com/Azumi67/LocalTun_TCP/smux_client"
+	"github.com/Azumi67/LocalTun_TCP/heartbeat_client"
 	"github.com/Azumi67/LocalTun_TCP/hash"
 	"github.com/sirupsen/logrus"
 )
