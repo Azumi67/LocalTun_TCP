@@ -144,13 +144,14 @@ nano /root/reset.sh
 #!/bin/bash
 
 while true; do
-    ping -c 1 30.0.0.2 >/dev/null 2>&1   ##30.0.0.2 is your remote private ip address
+    ping -c 1 30.0.0.1 >/dev/null 2>&1 ##30.0.0.1 is your remote private ip address
     if [ $? -ne 0 ]; then
-        systemctl restart azumilocal  ## this is localtun service
-        systemctl restart strong-azumi1  ## this is for ipsec
+        systemctl restart azumilocal ## this is localtun service
+        systemctl restart strong-azumi1 ## this is for ipsec
     fi
-    sleep 10
+    sleep 5  #time for ping interval check
 done
+
 ## do not copy this##
 
 nano /etc/systemd/system/azumireset.service
@@ -232,14 +233,13 @@ systemctl start azumilocal.service
 nano /root/reset.sh
 # copy this inside #
 #!/bin/bash
-
 while true; do
-    ping -c 1 2001:db8::1 >/dev/null 2>&1   ##2001:db8::1 is your remote private ip address
+    ping -c 1 2001:db8::1 >/dev/null 2>&1 ##2001:db8::1 is your remote private ip address
     if [ $? -ne 0 ]; then
-        systemctl restart azumilocal  ## this is localtun service
-        systemctl restart strong-azumi1  ## this is for ipsec
+        systemctl restart azumilocal ## this is localtun service
+        systemctl restart strong-azumi1 ## this is for ipsec
     fi
-    sleep 10
+    sleep 5  #time for ping interval check
 done
 ## do not copy this##
 
@@ -326,15 +326,15 @@ systemctl start azumilocal.service
 nano /root/reset.sh
 # copy this inside #
 #!/bin/bash
-
 while true; do
-    ping -c 1 30.0.0.1 >/dev/null 2>&1   ##30.0.0.1 is your remote private ip address
+    ping -c 1 30.0.0.1 >/dev/null 2>&1 ##30.0.0.1 is your remote private ip address
     if [ $? -ne 0 ]; then
-        systemctl restart azumilocal  ## this is localtun service
-        systemctl restart strong-azumi1  ## this is for ipsec
+        systemctl restart azumilocal ## this is localtun service
+        systemctl restart strong-azumi1 ## this is for ipsec
     fi
-    sleep 10
+    sleep 5  #time for ping interval check
 done
+
 ## do not copy this##
 
 nano /etc/systemd/system/azumireset.service
@@ -416,12 +416,12 @@ nano /root/reset.sh
 #!/bin/bash
 
 while true; do
-    ping -c 1 2001:db8::1 >/dev/null 2>&1   ##2001:db8::1 is your remote private ip address
+    ping -c 1 2001:db8::1 >/dev/null 2>&1 ##2001:db8::1 is your remote private ip address
     if [ $? -ne 0 ]; then
-        systemctl restart azumilocal  ## this is localtun service
-        systemctl restart strong-azumi1  ## this is for ipsec
+        systemctl restart azumilocal ## this is localtun service
+        systemctl restart strong-azumi1 ## this is for ipsec
     fi
-    sleep 10
+    sleep 5  #time for ping interval check
 done
 ## do not copy this##
 
@@ -504,12 +504,12 @@ nano /root/reset.sh
 #!/bin/bash
 
 while true; do
-    ping -c 1 30.0.0.2 >/dev/null 2>&1   ##30.0.0.2 is your remote private ip address
+    ping -c 1 30.0.0.2 >/dev/null 2>&1 ##30.0.0.2 is your remote private ip address
     if [ $? -ne 0 ]; then
-        systemctl restart azumilocal  ## this is localtun service
-        systemctl restart strong-azumi1  ## this is for ipsec
+        systemctl restart azumilocal ## this is localtun service
+        systemctl restart strong-azumi1 ## this is for ipsec
     fi
-    sleep 10
+    sleep 5  #time for ping interval check
 done
 ## do not copy this##
 
@@ -592,13 +592,14 @@ nano /root/reset.sh
 #!/bin/bash
 
 while true; do
-    ping -c 1 2001:db8::1 >/dev/null 2>&1   ##2001:db8::1 is your remote private ip address
+    ping -c 1 2001:db8::1 >/dev/null 2>&1 ##2001:db8::1 is your remote private ip address
     if [ $? -ne 0 ]; then
-        systemctl restart azumilocal  ## this is localtun service
-        systemctl restart strong-azumi1  ## this is for ipsec
+        systemctl restart azumilocal ## this is localtun service
+        systemctl restart strong-azumi1 ## this is for ipsec
     fi
-    sleep 10
+    sleep 5  #time for ping interval check
 done
+
 ## do not copy this##
 
 nano /etc/systemd/system/azumireset.service
@@ -680,13 +681,14 @@ nano /root/reset.sh
 #!/bin/bash
 
 while true; do
-    ping -c 1 30.0.0.1 >/dev/null 2>&1   ##30.0.0.1 is your remote private ip address
+    ping -c 1 30.0.0.1 >/dev/null 2>&1 ##30.0.0.1 is your remote private ip address
     if [ $? -ne 0 ]; then
-        systemctl restart azumilocal  ## this is localtun service
-        systemctl restart strong-azumi1  ## this is for ipsec
+        systemctl restart azumilocal ## this is localtun service
+        systemctl restart strong-azumi1 ## this is for ipsec
     fi
-    sleep 10
+    sleep 5  #time for ping interval check
 done
+
 ## do not copy this##
 
 nano /etc/systemd/system/azumireset.service
@@ -768,12 +770,12 @@ nano /root/reset.sh
 #!/bin/bash
 
 while true; do
-    ping -c 1 2001:db8::1 >/dev/null 2>&1   ##2001:db8::1 is your remote private ip address
+    ping -c 1 2001:db8::1 >/dev/null 2>&1 ##2001:db8::1 is your remote private ip address
     if [ $? -ne 0 ]; then
-        systemctl restart azumilocal  ## this is localtun service
-        systemctl restart strong-azumi1  ## this is for ipsec
+        systemctl restart azumilocal ## this is localtun service
+        systemctl restart strong-azumi1 ## this is for ipsec
     fi
-    sleep 10
+    sleep 5  #time for ping interval check
 done
 ## do not copy this##
 
