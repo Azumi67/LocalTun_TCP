@@ -3,6 +3,7 @@ package monitorclient
 import (
 	"os/exec"
 	"time"
+	"net"
 	"github.com/sirupsen/logrus"
 )
 
