@@ -1,21 +1,24 @@
+// main.go
 package main
 
 import (
+	"crypto/sha256"
 	"flag"
 	"fmt"
 	"net"
 	"os"
+	"runtime"
 	"sync"
-	"time"
+
 	"github.com/sirupsen/logrus"
 	"github.com/songgao/water"
-	"github.com/xtaci/smux"
 	"github.com/Azumi67/LocalTun_TCP/heartbeat_server"
 	"github.com/Azumi67/LocalTun_TCP/monitor_server"
 	"github.com/Azumi67/LocalTun_TCP/nonce_server"
 	"github.com/Azumi67/LocalTun_TCP/server_smux"
 	"github.com/Azumi67/LocalTun_TCP/tcp_no_delay_server"
-	"github.com/Azumi67/LocalTun_TCP/server"
+	"github.com/Azumi67/LocalTun_TCP/tun_server"
+	"github.com/Azumi67/LocalTun_TCP/worker_server"
 )
 
 var log = logrus.New()
@@ -35,6 +38,7 @@ func main() {
 	tcpNoDelay := flag.Bool("tcp-nodelay", false, "Enable TCP_NODELAY")
 	pingInterval := flag.Int("ping-interval", 10, "Ping interval in seconds")
 	serviceName := flag.String("service-name", "azumilocal", "name of the service to restart upon failure")
+	workers := flag.Int("worker", runtime.NumCPU(), "number of workers or based on the number of CPU cores")
 
 	flag.Parse()
 
@@ -45,17 +49,11 @@ func main() {
 		log.SetLevel(logrus.InfoLevel)
 	}
 
-	config := water.Config{
-		DeviceType: water.TUN,
-	}
-	config.Name = *tunName
-	tun, err := water.New(config)
+	tun, err := tunserver.TunUp(*tunIP, *clientTunIP, *subnetMask, *mtu, *tunName)
 	if err != nil {
-		log.Fatalf("Couldn't create TUN device: %v", err)
+		log.Fatalf("%v", err)
 	}
 	defer tun.Close()
-
-	tunserver.TunUp(tun, *tunIP, *clientTunIP, *subnetMask, *mtu, *tunName)
 
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", *serverPort))
 	if err != nil {
@@ -65,8 +63,16 @@ func main() {
 
 	log.Infof("Server listening on port %d", *serverPort)
 
-	go monitorserver.Monitor(*clientTunIP, *pingInterval, *serviceName)
-	go nonceserver.NonceDel()
+	go monitor_server.Monitor(*clientTunIP, *pingInterval, *serviceName)
+	go nonce_server.NonceDel()
+
+	var wg sync.WaitGroup
+	workerOnechan := make(chan net.Conn, *workers)
+
+	for i := 0; i < *workers; i++ {
+		wg.Add(1)
+		go worker_server.Worker(tun, workerOnechan, *secretKey, *verbose, *useSmux, *enableHeartbeat, *heartbeatInterval, &wg)
+	}
 
 	for {
 		conn, err := ln.Accept()
@@ -74,60 +80,12 @@ func main() {
 			log.Warnf("Couldn't accept any connection: %v", err)
 			continue
 		}
-
-		tcpnodelayserver.noDelay(conn, *tcpNoDelay)
-
-		go handleClient(conn, tun, *secretKey, *verbose, *useSmux, *enableHeartbeat, *heartbeatInterval)
+		if *tcpNoDelay {
+			tcp_no_delay_server.noDelay(conn)
+		}
+		workerOnechan <- conn
 	}
+
+	close(workerOnechan)
+	wg.Wait()
 }
-
-func handleClient(conn net.Conn, tun *water.Interface, secretKey string, verbose bool, useSmux bool, enableHeartbeat bool, heartbeatInterval int) {
-	defer conn.Close()
-
-	nonce, err := nonceserver.UniqueNonce()
-	if err != nil {
-		log.Warnf("Generating nonce failed: %v", err)
-		return
-	}
-
-	if _, err := conn.Write([]byte(nonce)); err != nil {
-		log.Warnf("Sending unique nonce failed: %v", err)
-		return
-	}
-
-	responseBuf := make([]byte, 32)
-	if _, err := conn.Read(responseBuf); err != nil {
-		log.Warnf("Reading the response wasn't possible: %v", err)
-		return
-	}
-
-	hashkey := sha256.New()
-	hashkey.Write([]byte(nonce))
-	hashkey.Write([]byte(secretKey))
-	expectThisHash := hashkey.Sum(nil)
-
-	if !nonceserver.CalHashes(responseBuf, expectThisHash) {
-		log.Warnf("Wrong authentication response")
-		return
-	}
-
-	if enableHeartbeat {
-		go heartbeatserver.trueHeartbeat(conn, heartbeatInterval)
-	}
-
-	if useSmux {
-		serversmux.HandleSmux(conn, tun, verbose)
-		return
-	}
-
-	clientToTun := make(chan []byte, 100)
-	tunToClient := make(chan []byte, 100)
-
-	go tunserver.FromClient(conn, tun, clientToTun, verbose)
-	go tunserver.ToTun(tun, clientToTun, verbose)
-	go tunserver.FromTun(tun, tunToClient, verbose)
-	go tunserver.ToClient(conn, tunToClient, verbose)
-
-	select {}
-}
-//buhbye
