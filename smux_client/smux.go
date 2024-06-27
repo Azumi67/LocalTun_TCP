@@ -2,6 +2,7 @@ package smuxclient
 
 import (
 	"net"
+	"encoding/binary"
 	"github.com/songgao/water"
 	"github.com/xtaci/smux"
 	"github.com/sirupsen/logrus"
