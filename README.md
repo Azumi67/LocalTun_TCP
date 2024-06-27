@@ -83,7 +83,7 @@
   apt install unzip -y
   ## amd64
   rm amd64.zip
-  wget https://github.com/Azumi67/LocalTun_TCP/releases/download/v1.3/amd64.zip
+  wget https://github.com/Azumi67/LocalTun_TCP/releases/download/v1.4/amd64.zip
   unzip amd64.zip -d /root/localTUN
   cd localTUN
   chmod +x tun-server_amd64   
