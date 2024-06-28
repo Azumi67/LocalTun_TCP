@@ -102,7 +102,7 @@
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -worker [your desired number of workers, eg: 8] or don't use -worker for default number
+./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker [your desired number of workers, eg: 8] or don't use -worker for default number
    
 ```
 <div align="right">
@@ -111,7 +111,7 @@
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -worker [your desired number of workers, eg: 8] or don't use -worker for default number
+./tun-client_amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker [your desired number of workers, eg: 8] or don't use -worker for default number
 ```
  <div align="right">
    
@@ -130,7 +130,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -worker [your desired number of workers, eg: 8] 
+ExecStart=/root/localTUN/tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker [your desired number of workers, eg: 8] 
 [Install]
 WantedBy=multi-user.target
 ##### do not copy this ###
@@ -149,7 +149,7 @@ nano /root/reset.sh
 #!/bin/bash
 
 while true; do
-    ping -c 1 30.0.0.1 >/dev/null 2>&1 ##30.0.0.1 is your remote private ip address
+    ping -c 2 30.0.0.1 >/dev/null 2>&1 ##30.0.0.1 is your remote private ip address
     if [ $? -ne 0 ]; then
         systemctl restart azumilocal ## this is localtun service
         systemctl restart strong-azumi1 ## this is for ipsec
@@ -190,7 +190,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -worker 8 [or just don't use it]
+./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8 [or just don't use it]
 -heartbeat-interval 30
 ```
 <div align="right">
@@ -199,7 +199,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -worker 8
+./tun-client_amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
 ```
 <div align="right">
   
@@ -218,7 +218,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -worker 8
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
    
 
 [Install]
@@ -239,7 +239,7 @@ nano /root/reset.sh
 # copy this inside #
 #!/bin/bash
 while true; do
-    ping -c 1 2001:db8::1 >/dev/null 2>&1 ##2001:db8::1 is your remote private ip address
+    ping -c 2 2001:db8::1 >/dev/null 2>&1 ##2001:db8::1 is your remote private ip address
     if [ $? -ne 0 ]; then
         systemctl restart azumilocal ## this is localtun service
         systemctl restart strong-azumi1 ## this is for ipsec
@@ -285,7 +285,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -worker 4[ you can skip using -worker and it will use default number based on cpu cores]
+./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 4[ you can skip using -worker and it will use default number based on cpu cores]
 ```
 <div align="right">
   
@@ -293,7 +293,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -worker 4
+./tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 4
 ```
 <div align="right">
   
@@ -312,7 +312,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -worker 4
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 4
    
 
 [Install]
@@ -332,7 +332,7 @@ nano /root/reset.sh
 # copy this inside #
 #!/bin/bash
 while true; do
-    ping -c 1 30.0.0.1 >/dev/null 2>&1 ##30.0.0.1 is your remote private ip address
+    ping -c 2 30.0.0.1 >/dev/null 2>&1 ##30.0.0.1 is your remote private ip address
     if [ $? -ne 0 ]; then
         systemctl restart azumilocal ## this is localtun service
         systemctl restart strong-azumi1 ## this is for ipsec
@@ -373,7 +373,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -worker 8 [or don't use it for default value based on the cpu cores]
+./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8 [or don't use it for default value based on the cpu cores]
 ```
 <div align="right">
   
@@ -381,7 +381,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -worker 8
+./tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
 ```
  <div align="right">
    
@@ -400,7 +400,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -worker 8
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
    
 
 [Install]
@@ -421,7 +421,7 @@ nano /root/reset.sh
 #!/bin/bash
 
 while true; do
-    ping -c 1 2001:db8::1 >/dev/null 2>&1 ##2001:db8::1 is your remote private ip address
+    ping -c 2 2001:db8::1 >/dev/null 2>&1 ##2001:db8::1 is your remote private ip address
     if [ $? -ne 0 ]; then
         systemctl restart azumilocal ## this is localtun service
         systemctl restart strong-azumi1 ## this is for ipsec
@@ -461,7 +461,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -worker 8 [or skip using it for default value based on the number of cpu cores]   
+./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8 [or skip using it for default value based on the number of cpu cores]   
 ```
 <div align="right">
   
@@ -469,7 +469,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -worker 8
+./tun-client_amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
 ```
 <div align="right">
   
@@ -488,7 +488,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -worker 8
+ExecStart=/root/localTUN/tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
    
 
 [Install]
@@ -509,7 +509,7 @@ nano /root/reset.sh
 #!/bin/bash
 
 while true; do
-    ping -c 1 30.0.0.2 >/dev/null 2>&1 ##30.0.0.2 is your remote private ip address
+    ping -c 2 30.0.0.2 >/dev/null 2>&1 ##30.0.0.2 is your remote private ip address
     if [ $? -ne 0 ]; then
         systemctl restart azumilocal ## this is localtun service
         systemctl restart strong-azumi1 ## this is for ipsec
@@ -549,7 +549,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -worker 8 [or skip using it for default vault based on the cpu cores available]
+./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8 [or skip using it for default vault based on the cpu cores available]
 ```
 <div align="right">
   
@@ -557,7 +557,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -worker 8
+./tun-client_amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
 ```
 <div align="right">
   
@@ -576,7 +576,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -service-name azumilocal
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
    
 
 [Install]
@@ -597,7 +597,7 @@ nano /root/reset.sh
 #!/bin/bash
 
 while true; do
-    ping -c 1 2001:db8::1 >/dev/null 2>&1 ##2001:db8::1 is your remote private ip address
+    ping -c 2 2001:db8::1 >/dev/null 2>&1 ##2001:db8::1 is your remote private ip address
     if [ $? -ne 0 ]; then
         systemctl restart azumilocal ## this is localtun service
         systemctl restart strong-azumi1 ## this is for ipsec
@@ -638,7 +638,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -worker 8 [or skip using it for default vault based on the cpu cores available]
+./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8 [or skip using it for default vault based on the cpu cores available]
 ```
 <div align="right">
   
@@ -646,7 +646,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -worker 8
+./tun-client_amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
 ```
 <div align="right">
   
@@ -665,7 +665,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -worker 8
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
    
 
 [Install]
@@ -686,7 +686,7 @@ nano /root/reset.sh
 #!/bin/bash
 
 while true; do
-    ping -c 1 30.0.0.1 >/dev/null 2>&1 ##30.0.0.1 is your remote private ip address
+    ping -c 2 30.0.0.1 >/dev/null 2>&1 ##30.0.0.1 is your remote private ip address
     if [ $? -ne 0 ]; then
         systemctl restart azumilocal ## this is localtun service
         systemctl restart strong-azumi1 ## this is for ipsec
@@ -727,7 +727,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -worker 8 [ or skip using it to use default value based on the number of cpu cores]
+./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8 [ or skip using it to use default value based on the number of cpu cores]
 ```
 <div align="right">
   
@@ -735,7 +735,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -worker 8
+./tun-client_amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
 ```
 <div align="right">
   
@@ -754,7 +754,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -service-name azumilocal
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
    
 
 [Install]
@@ -775,7 +775,7 @@ nano /root/reset.sh
 #!/bin/bash
 
 while true; do
-    ping -c 1 2001:db8::1 >/dev/null 2>&1 ##2001:db8::1 is your remote private ip address
+    ping -c 2 2001:db8::1 >/dev/null 2>&1 ##2001:db8::1 is your remote private ip address
     if [ $? -ne 0 ]; then
         systemctl restart azumilocal ## this is localtun service
         systemctl restart strong-azumi1 ## this is for ipsec
