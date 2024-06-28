@@ -191,7 +191,7 @@ systemctl status azumireset.service
    
 ```
 ./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8 [or just don't use it]
--heartbeat-interval 30
+
 ```
 <div align="right">
   
