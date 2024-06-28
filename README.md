@@ -38,8 +38,9 @@
 - امکان وارد کردن mtu به صورت manual
 - دارای smux و heartbeat
 - دارای ping interval و استفاده از Bin bash برای ریست سرویس ها
-- دارای encryption های IPSEC یا chacha20 (به زودی)
+- دارای encryption های IPSEC (به زودی)
 - دارای worker
+- دارای tcp nodelay و tcp keepalive
 - دارای authentication key برای ارتباط بین سرور و کلاینت (Unique nonce & Sha256 & expiry time)
 - دارای verbose برای نمایش لاگ (خطا)
 - مناسب برای ترکیب با IPSEC > لینک : https://github.com/Azumi67/6TO4-GRE-IPIP-SIT
