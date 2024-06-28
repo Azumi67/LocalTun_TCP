@@ -6,6 +6,10 @@
 
 **فعلا این پروژه در حالت پیش نویس است و باید صبر کنید تا کامل شود**
 
+**گزینه tcp keepalive و Keepalive interval اضافه شد**
+
+**لاگ های تانل در مسیر etc/server.log/ یا etc/client.log/ ذخیره میشود**
+
 **گزینه worker اضافه شد. به صورت دیفالت بر اساس cpu cores انتخاب میشود یا میتوانید با کامند worker 8- تعداد ورکر را انتخاب کنید**
 
 **مورد Challenge n Response Authentication به همراه unique nonce و Sha 256 به همراه expiry time اضافه شد**
