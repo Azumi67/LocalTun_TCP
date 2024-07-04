@@ -383,7 +383,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+./tun-client_amd64 -server-addr [KHAREJ_IPV6] -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
 ```
  <div align="right">
    
@@ -402,7 +402,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr [KHAREJ_IPV6] -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
    
 
 [Install]
@@ -648,7 +648,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+./tun-client_amd64 -server-addr [IRAN_IPV6] -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
 ```
 <div align="right">
   
@@ -667,7 +667,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr [IRAN_IPV6] -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
    
 
 [Install]
@@ -737,7 +737,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+./tun-client_amd64 -server-addr [IRAN_IPV6] -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
 ```
 <div align="right">
   
@@ -756,7 +756,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr IRAN_IPV6 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr [IRAN_IPV6] -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
    
 
 [Install]
