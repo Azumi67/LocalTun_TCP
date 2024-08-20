@@ -2,30 +2,21 @@
 نام پروژه : لوکال تانل به صورت دایرکت یا ریورس - Tun interface و بر روی پورت TCP
 ---------------------------------------------------------------
 
-**در حال نوشتن اسکریپت برای استفاده شخصی و گیم انلاین**(اسکریپت اماده است و بعدا اضافه میشود)
+**در حال نوشتن اسکریپت برای استفاده شخصی و گیم انلاین**(اسکریپت اماده است و بعدا اضافه میشود. در اسکریپت ترکیبات وایرگارد و geneve و vxlan هم خواهد بود)
 
-**صبر کنید تا اپدیت دیگری برای مشکلات mtu و packet size اپلود شود و سپس اسکریپت هم اپدیت میشود**
+**تغییراتی در packet size انجام شد و smux و yamux به دلیل اینکه در گیم مشکلاتی برای من به وجود اورده بود، حذف شد
 
 **بدون ipsec استفاده نشود. این پروژه برای استفاده شخصی خودم و یادگیری میباشد. لطفا استفاده نکنید**
 
-**گزینه tcp keepalive و Keepalive interval اضافه شد**
-
 **لاگ های تانل در مسیر etc/server.log/ یا etc/client.log/ ذخیره میشود**
 
-**گزینه worker اضافه شد. به صورت دیفالت بر اساس cpu cores انتخاب میشود یا میتوانید با کامند worker 8- تعداد ورکر را انتخاب کنید**
+**گزینه worker اضافه شد. به صورت دیفالت بر اساس cpu cores انتخاب میشود یا میتوانید با کامند worker 2- تعداد ورکر را انتخاب کنید**
 
 **مورد Challenge n Response Authentication به همراه unique nonce و Sha 256 به همراه expiry time اضافه شد**
 
-**این مورد xtaci/smux به همراه heartbeat به پروژه اضافه شد**
-
-**گزینه smux با heartbeat هم زمان استفاده نشود.خود smux کافی میباشد**
+**این مورد xtaci/smux به همراه heartbeat به دلیل مشکلاتی در گیم حدف شد تا بیشتر بر روی ان مطالعه شود**
 
 **این مورد tcpnodelay و logrus اضافه شد**
-
-**در حال کار بر روی اپدیت دادن**
-
-**در حال حاضر encapsulation استریم های دیتا tcp بر روی اینترفیس یا device tun انجام میشود. این عمل شامل اضافه کردن packet length میباشد که کلاینت یا دریافت کننده دقیقا همان مقدار از دیتا را از استریم read و دریافت میکند.(ممکن است در این قسمت همچنان مشکلاتی باشد)**
-
 
 
 
@@ -38,7 +29,6 @@
 - امکان انتخاب ایپی پرایوت انتخابی خودتان هم به صورت پرایوت ایپی 4 یا پرایوت ایپی 6
 - امکان انتخاب subnet mask برای پرایوت ایپی های ساخته
 - امکان وارد کردن mtu به صورت manual
-- دارای smux و heartbeat
 - دارای ping interval و استفاده از Bin bash برای ریست سرویس ها
 - دارای encryption های IPSEC (به زودی)
 - دارای worker
@@ -47,7 +37,7 @@
 - دارای verbose برای نمایش لاگ (خطا)
 - مناسب برای ترکیب با IPSEC > لینک : https://github.com/Azumi67/6TO4-GRE-IPIP-SIT
 - اتصال بین چندین سرور ایران و خارج ( بعدا در اسکریپت)
-- بعدا اسکریپت ساخته میشود ( در اسکریپت با IPsec هم میتوان ترکیب کرد)- باید با IPSEC استفاده شود
+- بعدا اسکریپت ساخته میشود ( در اسکریپت با IPsec هم میتوان ترکیب کرد)
 -----------------------
 <div align="right">
   <details>
@@ -56,7 +46,6 @@
 ------------------------------------ 
  <div align="right">
    
-- از طریق tcp دو سرور به هم وصل میشوند و از طریق اینترفیس tun و پرایوت ایپی به هم دیگه متصل خواهند بود. encapsulation & decapsulation هم زمان انجام میشود.
 - هدف نوشتن این برنامه برای این بوده است که از طریق پورت tcp و tun interface،‌ دو سرور به هم متصل شوند و از پرایوت آی‌پی های آنها برای تانل استقاده کرد و محدودیت بعضی از سرور ها به صورت ریورس برطرف شود.
 - به عبارتی شما به صورت ریورس، یک لوکال ایپی دریافت میکنید و سپس از آن پرایوت ایپی ها برای دایرکت تانل، پورت فوروارد یا ریورس استفاده مینمایید. 
 - پس از انجام تانل‌ لوکال به صورت دایرکت یا ریورس، به طور مثال میتوانید از پورت فوروارد استفاده نمایید یا مثلا دایرکت تانل چیزل استفاده نمایید یا ریورس.
@@ -65,7 +54,7 @@
 - پورت تنها برای ارتباط بین سرور و کلاینت میباشد و شما تنها باید از پرایوت ایپی ها برای تانل اصلی استفاده نمایید.
 - اول دستورات سرور را اجرا کنید و سپس دستورات کلاینت . میتوانید هم به صورت دایرکت یا ریورس انجام دهید. یعنی سرور اصلی خارج و کلاینت ایران و یا سرور اصلی ایران و کلاینت خارج باشد
 - میتوانید تست کنید و بهم اطلاع بدید اما برای استفاده باید صبر کنید تا داخل اسکریپت برای ترکیب با ipsec آورده شود.
-- کلید authentication اضافه شد که در کلاینت خوانده میشود و در سرور احراز هویت میشود
+- کلید authentication اضافه شد که در کلاینت خوانده میشود و در سرور احراز هویت میشود ( nonce & hash )
   </details>
 </div>
 
@@ -101,19 +90,21 @@
     <summary><strong><img src="https://github.com/Azumi67/Rathole_reverseTunnel/assets/119934376/fcbbdc62-2de5-48aa-bbdd-e323e96a62b5" alt="Image">دایرکت لوکال تانل پرایوت ایپی 4 - public ipv4 </strong></summary>
 
   - کامند های سرور (خارج)
+  - برای verbose لاگ از کامند -v استفاده نمایید . برای استفاده دیفالت از ورکر بر اساس cpu cores ، تگ -worker را حذف کنید
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker [your desired number of workers, eg: 8] or don't use -worker for default number
+./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1380 -tcpnodelay -worker 1
    
 ```
 <div align="right">
   
 - کامند های کلاینت (ایران)
+- برای verbose لاگ از کامند -v استفاده نمایید . برای استفاده دیفالت از ورکر بر اساس cpu cores ، تگ -worker را حذف کنید
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker [your desired number of workers, eg: 8] or don't use -worker for default number
+./tun-client_amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1280 -verbose -tcpnodelay -worker 1
 ```
  <div align="right">
    
@@ -132,7 +123,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker [your desired number of workers, eg: 8] 
+ExecStart=/root/localTUN/tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose-tcpnodelay-worker 1
 [Install]
 WantedBy=multi-user.target
 ##### do not copy this ###
@@ -189,19 +180,21 @@ systemctl status azumireset.service
     <summary><strong><img src="https://github.com/Azumi67/Rathole_reverseTunnel/assets/119934376/fcbbdc62-2de5-48aa-bbdd-e323e96a62b5" alt="Image">دایرکت لوکال تانل پرایوت ایپی 6 - public ipv4 </strong></summary>
 ```
   - کامند های سرور (خارج)
+  - برای verbose لاگ از کامند -v استفاده نمایید . برای استفاده دیفالت از ورکر بر اساس cpu cores ، تگ -worker را حذف کنید
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8 [or just don't use it]
+./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1380 -verbose -tcpnodelay
 
 ```
 <div align="right">
   
 - کامند های کلاینت (ایران)
+- برای verbose لاگ از کامند -v استفاده نمایید . برای استفاده دیفالت از ورکر بر اساس cpu cores ، تگ -worker را حذف کنید
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+./tun-client_amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1280 -tcpnodelay -worker 1
 ```
 <div align="right">
   
@@ -220,7 +213,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr KHAREJ_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1280 -verbose -tcpnodelay true -worker 8
    
 
 [Install]
@@ -284,18 +277,20 @@ systemctl status azumireset.service
     <summary><strong><img src="https://github.com/Azumi67/Rathole_reverseTunnel/assets/119934376/fcbbdc62-2de5-48aa-bbdd-e323e96a62b5" alt="Image">دایرکت لوکال تانل پرایوت ایپی 4 - public ipv6 </strong></summary>
 
   - کامند های سرور (خارج)
+  - برای verbose لاگ از کامند -v استفاده نمایید . برای استفاده دیفالت از ورکر بر اساس cpu cores ، تگ -worker را حذف کنید
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 4[ you can skip using -worker and it will use default number based on cpu cores]
+./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose -tcpnodelay -worker 4
 ```
 <div align="right">
   
 - کامند های کلاینت (ایران)
+- برای verbose لاگ از کامند -v استفاده نمایید . برای استفاده دیفالت از ورکر بر اساس cpu cores ، تگ -worker را حذف کنید
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 4
+./tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1280 -verbose -tcpnodelay -worker 4
 ```
 <div align="right">
   
@@ -314,7 +309,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 4
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr KHAREJ_IPV6 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose -tcpnodelay -worker 4
    
 
 [Install]
@@ -375,15 +370,16 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8 [or don't use it for default value based on the cpu cores]
+./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1380 -verbose -tcpnodelay -worker 1
 ```
 <div align="right">
   
 - کامند های کلاینت (ایران)
+- برای verbose لاگ از کامند -v استفاده نمایید . برای استفاده دیفالت از ورکر بر اساس cpu cores ، تگ -worker را حذف کنید
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr [KHAREJ_IPV6] -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+./tun-client_amd64 -server-addr [KHAREJ_IPV6] -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose -tcpnodelay -worker 2
 ```
  <div align="right">
    
@@ -402,7 +398,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr [KHAREJ_IPV6] -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr [KHAREJ_IPV6] -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1280 -verbose -tcpnodelay -worker 2
    
 
 [Install]
@@ -460,18 +456,20 @@ systemctl status azumireset.service
     <summary><strong><img src="https://github.com/Azumi67/Rathole_reverseTunnel/assets/119934376/fcbbdc62-2de5-48aa-bbdd-e323e96a62b5" alt="Image">ریورس لوکال تانل پرایوت ایپی 4 - public ipv4 </strong></summary>
 
   - کامند های سرور ( ایران)
+  - برای verbose لاگ از کامند -v استفاده نمایید . برای استفاده دیفالت از ورکر بر اساس cpu cores ، تگ -worker را حذف کنید
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8 [or skip using it for default value based on the number of cpu cores]   
+./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1380 -tcpnodelay
 ```
 <div align="right">
   
 - کامند های کلاینت (خارج)
+- برای verbose لاگ از کامند -v استفاده نمایید . برای استفاده دیفالت از ورکر بر اساس cpu cores ، تگ -worker را حذف کنید
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+./tun-client_amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1280 -tcpnodelay
 ```
 <div align="right">
   
@@ -490,7 +488,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+ExecStart=/root/localTUN/tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1380 -tcpnodelay
    
 
 [Install]
@@ -548,18 +546,20 @@ systemctl status azumireset.service
     <summary><strong><img src="https://github.com/Azumi67/Rathole_reverseTunnel/assets/119934376/fcbbdc62-2de5-48aa-bbdd-e323e96a62b5" alt="Image">ریورس لوکال تانل پرایوت ایپی 6 - public ipv4 </strong></summary>
 
   - کامند های سرور (ایران)
+  - برای verbose لاگ از کامند -v استفاده نمایید . برای استفاده دیفالت از ورکر بر اساس cpu cores ، تگ -worker را حذف کنید
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8 [or skip using it for default vault based on the cpu cores available]
+./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1380 -verbose -tcpnodelay -worker 8
 ```
 <div align="right">
   
 - کامند های کلاینت (خارج)
+- برای verbose لاگ از کامند -v استفاده نمایید . برای استفاده دیفالت از ورکر بر اساس cpu cores ، تگ -worker را حذف کنید
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+./tun-client_amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1280 -verbose -tcpnodelay -worker 8
 ```
 <div align="right">
   
@@ -578,7 +578,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr IRAN_IPV4 -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1280 -verbose -tcpnodelay -worker 8
    
 
 [Install]
@@ -640,7 +640,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8 [or skip using it for default vault based on the cpu cores available]
+./tun-server_amd64 -server-port 800 -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1380 -verbose -tcpnodelay -worker 2
 ```
 <div align="right">
   
@@ -648,7 +648,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr [IRAN_IPV6] -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+./tun-client_amd64 -server-addr [IRAN_IPV6] -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1280 -verbose -tcpnodelay -worker 2
 ```
 <div align="right">
   
@@ -667,7 +667,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr [IRAN_IPV6] -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr [IRAN_IPV6] -server-port 800 -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1280 -verbose -tcpnodelay -worker 2
    
 
 [Install]
@@ -726,10 +726,11 @@ systemctl status azumireset.service
     <summary><strong><img src="https://github.com/Azumi67/Rathole_reverseTunnel/assets/119934376/fcbbdc62-2de5-48aa-bbdd-e323e96a62b5" alt="Image">ریورس لوکال تانل پرایوت ایپی 6 - public ipv6 </strong></summary>
 
   - کامند های سرور (ایران)
+  - برای verbose لاگ از کامند -v استفاده نمایید . برای استفاده دیفالت از ورکر بر اساس cpu cores ، تگ -worker را حذف کنید
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8 [ or skip using it to use default value based on the number of cpu cores]
+./tun-server_amd64 -server-port 800 -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -verbose -tcpnodelay
 ```
 <div align="right">
   
@@ -737,7 +738,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-client_amd64 -server-addr [IRAN_IPV6] -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+./tun-client_amd64 -server-addr [IRAN_IPV6] -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1280 -verbose -tcpnodelay
 ```
 <div align="right">
   
@@ -756,7 +757,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client_amd64 -server-addr [IRAN_IPV6] -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1400 -verbose true -smux true -tcp-nodelay true -keepalive true -worker 8
+ExecStart=/root/localTUN/tun-client_amd64 -server-addr [IRAN_IPV6] -server-port 800 -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1280 -verbose -tcpnodelay
    
 
 [Install]
