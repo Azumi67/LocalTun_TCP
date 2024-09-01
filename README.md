@@ -10,13 +10,13 @@
 
 **لاگ های تانل در مسیر etc/server.log/ یا etc/client.log/ ذخیره میشود**
 
-**گزینه worker حذف شد**
+**گزینه worker اضافه شد**
 
 **مورد Challenge n Response Authentication به همراه unique nonce و Sha 256 به همراه expiry time حذف شد**
 
-**این مورد xtaci/smux دوباره با retry logic اضافه شد**
+**این مورد xtaci/smux دوباره با retry logic حذف شد**
 
-**این مورد tcpnodelay و logrus اضافه شد**
+**این مورد tcpnodelay و tcp keepalive اضافه شد**
 
 
 
@@ -27,6 +27,7 @@
 - امکان اتصال بین سرور و کلاینت بر روی پورت TCP
 - امکان اتصال سرور و کلاینت با پابلیک ایپی 4 یا native
 - امکان انتخاب ایپی پرایوت انتخابی خودتان هم به صورت پرایوت ایپی 4 یا پرایوت ایپی 6
+- دارای worker بر اساس cpu cores یا انتخابی
 - امکان انتخاب subnet mask برای پرایوت ایپی های ساخته
 - امکان وارد کردن mtu به صورت manual
 - دارای ping interval و استفاده از Bin bash برای ریست سرویس ها
@@ -86,21 +87,21 @@
     <summary><strong><img src="https://github.com/Azumi67/Rathole_reverseTunnel/assets/119934376/fcbbdc62-2de5-48aa-bbdd-e323e96a62b5" alt="Image">دایرکت لوکال تانل پرایوت ایپی 4 - public ipv4 </strong></summary>
 
   - کامند های سرور (خارج)
-  - برای verbose لاگ از کامند -v استفاده نمایید . 
+  
  <div align="left">
    
 ```
-./tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1380 -tcpnodelay -keepalive 10 -smux
+./tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -mtu 1380 -tcpnodelay -keepalive 1m -worker default
    
 ```
 <div align="right">
   
 - کامند های کلاینت (ایران)
-- برای verbose لاگ از کامند -v استفاده نمایید . 
+
  <div align="left">
    
 ```
-./tun-client -server-addr KHAREJ_IPV4 -server-port 800 -priv-key=/root/private_key.pem -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1280 -v -tcpnodelay -smux -keepalive 10
+./tun-client -server-addr KHAREJ_IPV4 -server-port 800 -priv-key=/root/private_key.pem -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -mtu 1280 -tcpnodelay -keepalive 1m -worker default
 ```
  <div align="right">
    
@@ -119,7 +120,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -v -tcpnodelay -keepalive 10 -smux
+ExecStart=/root/localTUN/tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -mtu 1480 -tcpnodelay -keepalive 1m -worker default
 [Install]
 WantedBy=multi-user.target
 ##### do not copy this ###
@@ -176,21 +177,19 @@ systemctl status azumireset.service
     <summary><strong><img src="https://github.com/Azumi67/Rathole_reverseTunnel/assets/119934376/fcbbdc62-2de5-48aa-bbdd-e323e96a62b5" alt="Image">دایرکت لوکال تانل پرایوت ایپی 6 - public ipv4 </strong></summary>
 ```
   - کامند های سرور (خارج)
-  - برای verbose لاگ از کامند -v استفاده نمایید 
  <div align="left">
    
 ```
-./tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1380 -v -tcpnodelay -keepalive 10 -smux
+./tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -mtu 1380 -tcpnodelay -keepalive 1m -worker default
 
 ```
 <div align="right">
   
 - کامند های کلاینت (ایران)
-- برای verbose لاگ از کامند -v استفاده نمایید
  <div align="left">
    
 ```
-./tun-client -server-addr KHAREJ_IPV4 -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1280 -tcpnodelay -smux -keepalive 10 -v
+./tun-client -server-addr KHAREJ_IPV4 -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -mtu 1280 -tcpnodelay -keepalive 1m -worker default
 ```
 <div align="right">
   
@@ -209,7 +208,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client -server-addr KHAREJ_IPV4 -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1280 -v -tcpnodelay -smux -keepalive 10
+ExecStart=/root/localTUN/tun-client -server-addr KHAREJ_IPV4 -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -mtu 1280 -tcpnodelay -keepalive 1m -worker default
    
 
 [Install]
@@ -273,20 +272,18 @@ systemctl status azumireset.service
     <summary><strong><img src="https://github.com/Azumi67/Rathole_reverseTunnel/assets/119934376/fcbbdc62-2de5-48aa-bbdd-e323e96a62b5" alt="Image">دایرکت لوکال تانل پرایوت ایپی 4 - public ipv6 </strong></summary>
 
   - کامند های سرور (خارج)
-  - برای verbose لاگ از کامند -v استفاده نمایید 
  <div align="left">
    
 ```
-./tun-server_amd64 -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1480 -v -tcpnodelay -smux -keepalive 10
+./tun-server_amd64 -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -mtu 1480 -tcpnodelay -keepalive 1m -worker default
 ```
 <div align="right">
   
 - کامند های کلاینت (ایران)
-- برای verbose لاگ از کامند -v استفاده نمایید 
  <div align="left">
    
 ```
-./tun-client -server-addr KHAREJ_IPV6 -server-port 800 -priv-key=/root/private_key.pem -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1280 -v -tcpnodelay -smux -keepalive 10
+./tun-client -server-addr KHAREJ_IPV6 -server-port 800 -priv-key=/root/private_key.pem -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -mtu 1280 -tcpnodelay -keepalive 1m -worker default
 ```
 <div align="right">
   
@@ -305,7 +302,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client -server-addr KHAREJ_IPV6 -server-port 800 -priv-key=/root/private_key.pem -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1380 -v -tcpnodelay -smux -keepalive 10
+ExecStart=/root/localTUN/tun-client -server-addr KHAREJ_IPV6 -server-port 800 -priv-key=/root/private_key.pem -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -mtu 1380 -tcpnodelay -keepalive 1m -worker default
    
 
 [Install]
@@ -366,16 +363,15 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1380 -v -tcpnodelay -smux -keepalive 10
+./tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -mtu 1380 -tcpnodelay -keepalive 1m -worker default
 ```
 <div align="right">
   
 - کامند های کلاینت (ایران)
-- برای verbose لاگ از کامند -v استفاده نمایید
  <div align="left">
    
 ```
-./tun-client -server-addr [KHAREJ_IPV6] -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1380 -v -tcpnodelay -smux -keepalive 10
+./tun-client -server-addr [KHAREJ_IPV6] -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -mtu 1380 -tcpnodelay -keepalive 1m -worker default
 ```
  <div align="right">
    
@@ -394,7 +390,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client -server-addr [KHAREJ_IPV6] -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1280 -v -tcpnodelay -smux -keepalive 10
+ExecStart=/root/localTUN/tun-client -server-addr [KHAREJ_IPV6] -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -mtu 1280 -tcpnodelay -keepalive 1m -worker default
    
 
 [Install]
@@ -452,20 +448,19 @@ systemctl status azumireset.service
     <summary><strong><img src="https://github.com/Azumi67/Rathole_reverseTunnel/assets/119934376/fcbbdc62-2de5-48aa-bbdd-e323e96a62b5" alt="Image">ریورس لوکال تانل پرایوت ایپی 4 - public ipv4 </strong></summary>
 
   - کامند های سرور ( ایران)
-  - برای verbose لاگ از کامند -v استفاده نمایید
+
  <div align="left">
    
 ```
-./tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1380 -tcpnodelay -keepalive 10 -v -smux
+./tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -mtu 1380 -tcpnodelay -keepalive 1m -worker default
 ```
 <div align="right">
   
 - کامند های کلاینت (خارج)
-- برای verbose لاگ از کامند -v استفاده نمایید 
  <div align="left">
    
 ```
-./tun-client -server-addr IRAN_IPV4 -server-port 800 -priv-key=/root/private_key.pem -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1280 -tcpnodelay -keepalive 10 -v -smux
+./tun-client -server-addr IRAN_IPV4 -server-port 800 -priv-key=/root/private_key.pem -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -mtu 1280 -tcpnodelay -keepalive 1m -worker default
 ```
 <div align="right">
   
@@ -484,7 +479,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -key azumi -mtu 1380 -tcpnodelay -keepalive 10 -smux -v
+ExecStart=/root/localTUN/tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 30.0.0.1 -client-private 30.0.0.2 -subnet 24 -device tun2 -mtu 1380 -tcpnodelay -keepalive 1m -worker default
    
 
 [Install]
@@ -542,20 +537,18 @@ systemctl status azumireset.service
     <summary><strong><img src="https://github.com/Azumi67/Rathole_reverseTunnel/assets/119934376/fcbbdc62-2de5-48aa-bbdd-e323e96a62b5" alt="Image">ریورس لوکال تانل پرایوت ایپی 6 - public ipv4 </strong></summary>
 
   - کامند های سرور (ایران)
-  - برای verbose لاگ از کامند -v استفاده نمایید 
  <div align="left">
    
 ```
-./tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1380 -v -tcpnodelay -smux -keepalive 10
+./tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -mtu 1380 -tcpnodelay -keepalive 1m -worker default
 ```
 <div align="right">
   
 - کامند های کلاینت (خارج)
-- برای verbose لاگ از کامند -v استفاده نمایید .
  <div align="left">
    
 ```
-./tun-client -server-addr IRAN_IPV4 -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1280 -v -tcpnodelay -smux -keepalive 10
+./tun-client -server-addr IRAN_IPV4 -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -mtu 1280 -tcpnodelay -keepalive 1m -worker default
 ```
 <div align="right">
   
@@ -574,7 +567,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client -server-addr IRAN_IPV4 -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -mtu 1280 -v -tcpnodelay -smux -keepalive 10
+ExecStart=/root/localTUN/tun-client -server-addr IRAN_IPV4 -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -mtu 1280 -tcpnodelay -keepalive 1m -worker default
    
 
 [Install]
@@ -636,7 +629,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 30.0.0.1 -client-private 30.0.0.2 -pub-key=/root/keys/public_key.pem -subnet 24 -device tun2 -key azumi -mtu 1380 -v -tcpnodelay -smux -keepalive 10
+./tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 30.0.0.1 -client-private 30.0.0.2 -pub-key=/root/keys/public_key.pem -subnet 24 -device tun2 -mtu 1380 -tcpnodelay -keepalive 1m -worker default
 ```
 <div align="right">
   
@@ -644,7 +637,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-client -server-addr [IRAN_IPV6] -server-port 800 -priv-key=/root/private_key.pem -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1280 -v -tcpnodelay -smux -keepalive 10
+./tun-client -server-addr [IRAN_IPV6] -server-port 800 -priv-key=/root/private_key.pem -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -mtu 1280 -tcpnodelay -keepalive 1m -worker default
 ```
 <div align="right">
   
@@ -663,7 +656,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client -server-addr [IRAN_IPV6] -server-port 800 -priv-key=/root/private_key.pem -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -key azumi -mtu 1280 -v -tcpnodelay -smux -keepalive 10
+ExecStart=/root/localTUN/tun-client -server-addr [IRAN_IPV6] -server-port 800 -priv-key=/root/private_key.pem -client-private 30.0.0.2 -server-private 30.0.0.1 -subnet 24 -device tun2 -mtu 1280 -tcpnodelay -keepalive 1m -worker default
    
 
 [Install]
@@ -726,7 +719,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -key azumi -mtu 1480 -v -tcpnodelay -keepalive 10 -smux
+./tun-server -server-port 800 -pub-key=/root/keys/public_key.pem -server-private 2001:db8::1 -client-private 2001:db8::2 -subnet 64 -device tun2 -mtu 1480 -tcpnodelay -keepalive 1m -worker default
 ```
 <div align="right">
   
@@ -734,7 +727,7 @@ systemctl status azumireset.service
  <div align="left">
    
 ```
-./tun-client -server-addr [IRAN_IPV6] -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1280 -verbose -tcpnodelay -keepalive 10
+./tun-client -server-addr [IRAN_IPV6] -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -mtu 1280 -tcpnodelay -keepalive 1m -worker default
 ```
 <div align="right">
   
@@ -753,7 +746,7 @@ After=network.target
 Type=simple
 Restart=always    
 LimitNOFILE=1048576
-ExecStart=/root/localTUN/tun-client -server-addr [IRAN_IPV6] -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -key azumi -mtu 1280 -verbose -tcpnodelay -keepalive 10
+ExecStart=/root/localTUN/tun-client -server-addr [IRAN_IPV6] -server-port 800 -priv-key=/root/private_key.pem -client-private 2001:db8::2 -server-private 2001:db8::1 -subnet 64 -device tun2 -mtu 1280 -tcpnodelay -keepalive 1m -worker default
    
 
 [Install]
