@@ -83,7 +83,7 @@ func RunServerSide(serverPort int, tunIP, clientIP, subnetMask, tunName, publicK
 
 	log.Printf("Server listening on port %d\n", serverPort)
 
-	workerCount := utils.DetermineWorkerCount(workerFlag)
+	workerCount := utils.WorkerCount(workerFlag)
 	var wg sync.WaitGroup
 
 	for {
