@@ -14,8 +14,24 @@ func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
 		return nil, err
 	}
 	block, _ := pem.Decode(keyData)
-	if block == nil || block.Type != "RSA PRIVATE KEY" {
+	if block == nil {
 		return nil, fmt.Errorf("invalid private key data")
 	}
-	return x509.ParsePKCS1PrivateKey(block.Bytes)
+
+	switch block.Type {
+	case "RSA PRIVATE KEY":
+		return x509.ParsePKCS1PrivateKey(block.Bytes)
+	case "PRIVATE KEY":
+		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, fmt.Errorf("parsing private key failed: %v", err)
+		}
+		privateKey, ok := key.(*rsa.PrivateKey)
+		if !ok {
+			return nil, fmt.Errorf("not RSA private key")
+		}
+		return privateKey, nil
+	default:
+		return nil, fmt.Errorf("unsupported private key type: %s", block.Type)
+	}
 }
