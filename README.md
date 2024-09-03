@@ -78,7 +78,10 @@
   unzip amd64.zip -d /root/localTUN
   cd localTUN
   chmod +x tun-server 
-  chmod +x tun-client  
+  chmod +x tun-client
+Key creation :
+openssl genrsa -out private_key.pem 2048
+openssl rsa -pubout -in private_key.pem -out public_key.pem
  ```
  </details>
 </div>
