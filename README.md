@@ -1,4 +1,4 @@
-![client1](https://github.com/user-attachments/assets/4695fd97-d937-4223-a622-431afc36e116)![R (2)](https://github.com/Azumi67/PrivateIP-Tunnel/assets/119934376/a064577c-9302-4f43-b3bf-3d4f84245a6f)
+(https://github.com/Azumi67/PrivateIP-Tunnel/assets/119934376/a064577c-9302-4f43-b3bf-3d4f84245a6f)
 نام پروژه : لوکال تانل به صورت دایرکت یا ریورس - Tun interface و بر روی پورت TCP
 ---------------------------------------------------------------
 
