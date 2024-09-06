@@ -484,6 +484,15 @@
 </div>
 
 ------------------
+![R (a2)](https://github.com/Azumi67/PrivateIP-Tunnel/assets/119934376/716fd45e-635c-4796-b8cf-856024e5b2b2)
+**اسکریپت من**
+----------------
+
+```
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Azumi67/LocalTun_TCP/main/tun.sh)"
+```
+
+---------------------------------------------
 
 ![6348248](https://github.com/Azumi67/PrivateIP-Tunnel/assets/119934376/398f8b07-65be-472e-9821-631f7b70f783)
 **روش اجرا**
