@@ -30,6 +30,7 @@
   
 ------------------------------------ 
 
+
 - ریست تایمر اجباری به دلیل مشکل ساز بودن در گیم از اسکریپت حذف شد
 - تغییراتی در authentication method انجام شد و از pub key & priv key استفاده خواهد شد
 - لاگ های تانل در مسیر etc/server.log/ یا etc/client.log/ ذخیره میشود
@@ -37,11 +38,8 @@
 - مورد Challenge n Response Authentication به همراه unique nonce و Sha 256 به همراه expiry time حذف شد
 - این مورد xtaci/smux دوباره با retry logic حذف شد
 - این مورد tcpnodelay و tcp keepalive اضافه شد
-
   </details>
 </div>
-
-
 <div align="right">
   <details>
     <summary><strong>توضیحات</strong></summary>
