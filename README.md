@@ -111,8 +111,8 @@
 - ریست تایمر tun را فعال میکنم و عدد انتخابی را وارد میکنم . مثلا من هر 12 ساعت یا 24 ساعت ریست میکنم
 - پس از فعال کردن ریست تایمر هم در سرور خارج و هم کلاینت برای sync شدن تایم ها بهتر است یک بار هر در سرویس مربوطه هم زمان در سرور و کلاینت ریست شوند
 - اول سرور و سپس کلاینت ریست شود
-- سرور خارج : systemctl restart kazumi-local , systemctl status reset-timer
-- کلاینت ایران : systemctl restart iazumi-local , systemctl status reset-timer
+- سرور خارج : systemctl restart kazumi-local , systemctl restart reset-timer
+- کلاینت ایران : systemctl restart iazumi-local , systemctl restart reset-timer
 
 ----------------------
 
@@ -146,8 +146,8 @@
 - اگر پینگ بین دو پرایوت ایپی برقرار نشد خود تانل پس از چند ثانیه connection را فعال میکند
 - پس از انجام کانفیگ برای sync کردن ریست تایمر ها یک بار در سرور و کلاینت، سرویس ها را ریست کنید
 - اول سرور و سپس کلاینت ریست شود
-- سرور خارج : systemctl restart kazumi-local , systemctl status reset-timer
-- کلاینت ایران : systemctl restart iazumi-local , systemctl status reset-timer
+- سرور خارج : systemctl restart kazumi-local , systemctl restart reset-timer
+- کلاینت ایران : systemctl restart iazumi-local , systemctl restart reset-timer
 
 **ویرایش کانفیگ**
 
@@ -209,8 +209,8 @@
 - مقدار mtu هم اتوماتیک حساب میشود
 - پس از فعال کردن ریست تایمر هم در سرور خارج و هم کلاینت برای sync شدن تایم ها بهتر است یک بار هر در سرویس مربوطه هم زمان در سرور و کلاینت ریست شوند
 - اول سرور و سپس کلاینت ریست شود
-- سرور خارج : systemctl restart kazumi-local , systemctl status reset-timer
-- کلاینت ایران : systemctl restart iazumi-local , systemctl status reset-timer
+- سرور خارج : systemctl restart kazumi-local , systemctl restart reset-timer
+- کلاینت ایران : systemctl restart iazumi-local , systemctl restart reset-timer
 
 ----------------------
 
@@ -248,8 +248,8 @@
 - مقدار mtu هم اتوماتیک حساب میشود
 - پس از انجام کانفیگ برای sync کردن ریست تایمر ها یک بار در سرور و کلاینت، سرویس ها را ریست کنید
 - اول سرور و سپس کلاینت ریست شود
-- سرور خارج : systemctl restart kazumi-local , systemctl status reset-timer
-- کلاینت ایران : systemctl restart iazumi-local , systemctl status reset-timer
+- سرور خارج : systemctl restart kazumi-local , systemctl restart reset-timer
+- کلاینت ایران : systemctl restart iazumi-local , systemctl restart reset-timer
 
 **ویرایش کانفیگ**
 
@@ -307,8 +307,8 @@
 - سپس Ipsec را فعال میکنم و secret key را وارد میکنم
 - پس از فعال کردن ریست تایمر هم در سرور خارج و هم کلاینت برای sync شدن تایم ها بهتر است یک بار هر در سرویس مربوطه هم زمان در سرور و کلاینت ریست شوند
 - اول سرور و سپس کلاینت ریست شود
-- کلاینت خارج : systemctl restart krazumi-local , systemctl status reset-timer
-- سرور ایران : systemctl restart irazumi-local , systemctl status reset-timer
+- کلاینت خارج : systemctl restart krazumi-local , systemctl restart reset-timer
+- سرور ایران : systemctl restart irazumi-local , systemctl restart reset-timer
 
 ----------------------
 
@@ -346,8 +346,8 @@
 - گزینه ipsec را فعال میکنم و secret key که در سرور وارد کردم را در کلاینت هم وارد میکنم
 - پس از انجام کانفیگ برای sync کردن ریست تایمر ها یک بار در سرور و کلاینت، سرویس ها را ریست کنید
 - اول سرور و سپس کلاینت ریست شود
-- کلاینت خارج : systemctl restart krazumi-local , systemctl status reset-timer
-- سرور ایران : systemctl restart irazumi-local , systemctl status reset-timer
+- کلاینت خارج : systemctl restart krazumi-local , systemctl restart reset-timer
+- سرور ایران : systemctl restart irazumi-local , systemctl restart reset-timer
 
 **ویرایش کانفیگ**
 
@@ -423,8 +423,8 @@
 - ریست تایمر را برای ipsec و tun فعال میکنم و مقدار انتخابی را وارد میکنم . مثلا من برای ریست تایمر مقدار 12 یا بیشتر را قرار میدهم
 - پس از فعال کردن ریست تایمر هم در سرور خارج و هم کلاینت برای sync شدن تایم ها بهتر است یک بار هر در سرویس مربوطه هم زمان در سرور و کلاینت ریست شوند
 - اول سرور و سپس کلاینت ریست شود
-- سرور خارج : systemctl restart kazumi-local , systemctl status reset-timer
-- کلاینت ایران : systemctl restart iazumi-local , systemctl status reset-timer
+- سرور خارج : systemctl restart kazumi-local , systemctl restart reset-timer
+- کلاینت ایران : systemctl restart iazumi-local , systemctl restart reset-timer
 ----------------------
 
 ![green-dot-clipart-3](https://github.com/Azumi67/6TO4-PrivateIP/assets/119934376/49000de2-53b6-4c5c-888d-f1f397d77b92)**کلاینت ایران**
@@ -474,8 +474,8 @@
 - اگر پینگ بین دو پرایوت ایپی برقرار نشد خود تانل پس از چند ثانیه connection را فعال میکند
 - پس از انجام کانفیگ برای sync کردن ریست تایمر ها یک بار در سرور و کلاینت، سرویس ها را ریست کنید
 - اول سرور و سپس کلاینت ریست شود
-- سرور خارج : systemctl restart kazumi-local , systemctl status reset-timer
-- کلاینت ایران : systemctl restart iazumi-local ,systemctl status reset-timer
+- سرور خارج : systemctl restart kazumi-local , systemctl restart reset-timer
+- کلاینت ایران : systemctl restart iazumi-local ,systemctl restart reset-timer
 
 **ویرایش کانفیگ**
 
